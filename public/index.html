@@ -4,10 +4,10 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#f5e2de" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="A personal portfolio of selected work, experience, and creative projects."
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
@@ -15,6 +15,29 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <style>
+      .boot-loader{position:fixed;inset:0;display:grid;align-content:center;justify-items:center;gap:15px;overflow:hidden;padding:28px;background:#f5e2de;color:#162939;font-family:Arial,sans-serif}
+      .boot-loader:before,.boot-loader:after{position:absolute;width:min(72vw,620px);aspect-ratio:1;border:1px solid #6a215312;border-radius:50%;content:"";pointer-events:none}
+      .boot-loader:after{width:min(92vw,820px);border-color:#1d3a4d12}
+      .boot-art{position:relative;width:clamp(175px,27vw,245px);aspect-ratio:1}
+      .boot-art svg{width:100%;height:100%;overflow:visible}
+      .boot-orbit{stroke:#6a215252;stroke-width:1;stroke-dasharray:3 7;transform-origin:center;animation:boot-orbit 24s linear infinite}
+      .boot-orbit-two{stroke:#1d3a4d50;stroke-dasharray:2 6;animation-duration:31s;animation-direction:reverse}
+      .boot-core{fill:#fff8;stroke:#6a215229;stroke-width:1}
+      .boot-spark{fill:#1d3a4d;transform-origin:190px 59px;animation:boot-orbit 9s linear infinite}
+      .boot-monogram{position:absolute;inset:0;display:grid;place-items:center;color:#6a2153;font:500 clamp(30px,6vw,47px) Georgia,serif}
+      .boot-kicker{display:flex;align-items:center;gap:8px;color:#6a2153;font-size:9px;font-weight:600;letter-spacing:.2em}
+      .boot-kicker i{width:6px;height:6px;border-radius:50%;background:#1d3a4d;box-shadow:0 0 0 4px #1d3a4d1f}
+      .boot-title{margin:0;font:400 clamp(20px,3.7vw,28px)/1.2 Georgia,serif;letter-spacing:-.035em}
+      .boot-copy{position:relative;display:grid;justify-items:center;gap:12px;text-align:center}
+      .boot-progress{position:relative;width:118px;height:2px;margin-top:3px;overflow:hidden;background:#6a215324}
+      .boot-progress i{position:absolute;inset:0 auto 0 -42%;width:42%;background:#1d3a4d;animation:boot-progress 1.6s ease-in-out infinite}
+      .boot-caption{color:#16293999;font-size:10px;letter-spacing:.04em}
+      @keyframes boot-orbit{to{transform:rotate(360deg)}}
+      @keyframes boot-progress{to{transform:translateX(340%)}}
+      @media(max-width:600px){.boot-loader{gap:8px}.boot-art{width:clamp(155px,52vw,205px)}}
+      @media(prefers-reduced-motion:reduce){.boot-orbit,.boot-spark,.boot-progress i{animation:none!important}.boot-progress i{left:0;width:48%}}
+    </style>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -24,11 +47,27 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>Personal Portfolio</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-loader" role="status" aria-live="polite" aria-label="Loading portfolio">
+        <div class="boot-art" aria-hidden="true">
+          <svg viewBox="0 0 240 240" fill="none">
+            <circle class="boot-orbit" cx="120" cy="120" r="82" />
+            <ellipse class="boot-orbit boot-orbit-two" cx="120" cy="120" rx="101" ry="47" transform="rotate(-38 120 120)" />
+            <ellipse class="boot-orbit" cx="120" cy="120" rx="97" ry="38" transform="rotate(42 120 120)" />
+            <circle class="boot-core" cx="120" cy="120" r="48" />
+            <path class="boot-spark" d="m190 45 5 14 14 5-14 5-5 14-5-14-14-5 14-5 5-14Z" />
+            <circle cx="39" cy="105" r="4" fill="#f5e2de" stroke="#6a2153" stroke-width="2" />
+            <circle cx="186" cy="175" r="4" fill="#f5e2de" stroke="#6a2153" stroke-width="2" />
+          </svg>
+          <span class="boot-monogram">✳</span>
+        </div>
+        <div class="boot-copy"><p class="boot-title">Loading…</p><span class="boot-progress" aria-hidden="true"><i></i></span></div>
+      </div>
+    </div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

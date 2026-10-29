@@ -1,0 +1,2 @@
+-- Admin access is provisioned by Auth user ID in the SQL Editor after the
+-- owner account exists. Do not store login credentials in migrations.
