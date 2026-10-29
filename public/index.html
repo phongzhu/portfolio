@@ -16,27 +16,33 @@
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <style>
-      .boot-loader{position:fixed;inset:0;display:grid;align-content:center;justify-items:center;gap:15px;overflow:hidden;padding:28px;background:#f5e2de;color:#162939;font-family:Arial,sans-serif}
-      .boot-loader:before,.boot-loader:after{position:absolute;width:min(72vw,620px);aspect-ratio:1;border:1px solid #6a215312;border-radius:50%;content:"";pointer-events:none}
-      .boot-loader:after{width:min(92vw,820px);border-color:#1d3a4d12}
-      .boot-art{position:relative;width:clamp(175px,27vw,245px);aspect-ratio:1}
-      .boot-art svg{width:100%;height:100%;overflow:visible}
-      .boot-orbit{stroke:#6a215252;stroke-width:1;stroke-dasharray:3 7;transform-origin:center;animation:boot-orbit 24s linear infinite}
-      .boot-orbit-two{stroke:#1d3a4d50;stroke-dasharray:2 6;animation-duration:31s;animation-direction:reverse}
-      .boot-core{fill:#fff8;stroke:#6a215229;stroke-width:1}
-      .boot-spark{fill:#1d3a4d;transform-origin:190px 59px;animation:boot-orbit 9s linear infinite}
-      .boot-monogram{position:absolute;inset:0;display:grid;place-items:center;color:#6a2153;font:500 clamp(30px,6vw,47px) Georgia,serif}
-      .boot-kicker{display:flex;align-items:center;gap:8px;color:#6a2153;font-size:9px;font-weight:600;letter-spacing:.2em}
-      .boot-kicker i{width:6px;height:6px;border-radius:50%;background:#1d3a4d;box-shadow:0 0 0 4px #1d3a4d1f}
-      .boot-title{margin:0;font:400 clamp(20px,3.7vw,28px)/1.2 Georgia,serif;letter-spacing:-.035em}
+      .boot-loader{position:fixed;inset:0;display:grid;align-content:center;justify-items:center;gap:15px;overflow:hidden;padding:28px;background:#f5e2de;color:#162939;font-family:Arial,sans-serif;animation:boot-reveal 1.25s cubic-bezier(.2,.75,.2,1) both}
+      .boot-loader:before,.boot-loader:after{position:absolute;width:min(72vw,620px);aspect-ratio:1;border:1px solid #6a215329;border-radius:50%;content:"";pointer-events:none;animation:boot-halo 4.2s ease-in-out infinite}
+      .boot-loader:after{width:min(92vw,820px);border-color:#1d3a4d24;animation-delay:-2.1s}
+      .boot-art{position:relative;width:clamp(175px,27vw,245px);aspect-ratio:1;filter:drop-shadow(0 16px 24px #6a21532b);animation:boot-float 3.1s ease-in-out infinite}
+      .boot-art>svg:not(.boot-logo){width:100%;height:100%;overflow:visible}
+      .boot-orbit{stroke:#6a21527a;stroke-width:1.2;stroke-dasharray:3 7;transform-origin:center;animation:boot-orbit 9s linear infinite}
+      .boot-orbit-two{stroke:#1d3a4d70;stroke-dasharray:2 6;animation-duration:13s;animation-direction:reverse}
+      .boot-core{fill:#fff8;stroke:#6a215244;stroke-width:1;filter:drop-shadow(0 0 9px #6a21533d);animation:boot-core-pulse 2s ease-in-out infinite}
+      .boot-spark{fill:#1d3a4d;transform-origin:190px 59px;filter:drop-shadow(0 0 5px #1d3a4d80);animation:boot-spark 4.5s ease-in-out infinite}
+      .boot-logo{position:absolute;z-index:1;inset:0;width:72px;height:72px;margin:auto;color:#6a2153;filter:drop-shadow(0 0 7px #6a215357);animation:boot-logo-pop 2s ease-in-out infinite}
+      .boot-logo path:first-child,.boot-logo path:nth-child(2){stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+      .boot-logo path:nth-child(3),.boot-logo circle{fill:currentColor}
+      .boot-title{margin:0;font:400 clamp(20px,3.7vw,28px)/1.2 Georgia,serif;letter-spacing:-.035em;animation:boot-title-enter .7s .15s cubic-bezier(.2,.75,.2,1) both}
       .boot-copy{position:relative;display:grid;justify-items:center;gap:12px;text-align:center}
-      .boot-progress{position:relative;width:118px;height:2px;margin-top:3px;overflow:hidden;background:#6a215324}
-      .boot-progress i{position:absolute;inset:0 auto 0 -42%;width:42%;background:#1d3a4d;animation:boot-progress 1.6s ease-in-out infinite}
-      .boot-caption{color:#16293999;font-size:10px;letter-spacing:.04em}
+      .boot-progress{position:relative;width:140px;height:3px;margin-top:3px;overflow:hidden;border-radius:99px;background:#6a21532b}
+      .boot-progress i{position:absolute;inset:0 auto 0 -36%;width:36%;border-radius:99px;background:#1d3a4d;box-shadow:0 0 12px #1d3a4d99;animation:boot-progress 1.05s cubic-bezier(.4,0,.2,1) infinite}
       @keyframes boot-orbit{to{transform:rotate(360deg)}}
-      @keyframes boot-progress{to{transform:translateX(340%)}}
+      @keyframes boot-spark{0%,100%{transform:rotate(-12deg) scale(.84)}50%{transform:rotate(12deg) scale(1.12)}}
+      @keyframes boot-halo{0%,100%{transform:scale(.92);opacity:.38}50%{transform:scale(1.04);opacity:.9}}
+      @keyframes boot-core-pulse{0%,100%{filter:drop-shadow(0 0 5px #6a215321)}50%{filter:drop-shadow(0 0 16px #6a215363)}}
+      @keyframes boot-logo-pop{0%,100%{transform:scale(.9) rotate(-5deg)}50%{transform:scale(1.14) rotate(5deg)}}
+      @keyframes boot-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+      @keyframes boot-title-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes boot-reveal{from{opacity:0;clip-path:circle(0 at 50% 50%)}to{opacity:1;clip-path:circle(150% at 50% 50%)}}
+      @keyframes boot-progress{to{transform:translateX(390%)}}
       @media(max-width:600px){.boot-loader{gap:8px}.boot-art{width:clamp(155px,52vw,205px)}}
-      @media(prefers-reduced-motion:reduce){.boot-orbit,.boot-spark,.boot-progress i{animation:none!important}.boot-progress i{left:0;width:48%}}
+      @media(prefers-reduced-motion:reduce){.boot-loader,.boot-loader:before,.boot-loader:after,.boot-art,.boot-orbit,.boot-spark,.boot-core,.boot-logo,.boot-title,.boot-progress i{animation:none!important}.boot-progress i{left:0;width:48%}}
     </style>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
@@ -58,12 +64,17 @@
             <circle class="boot-orbit" cx="120" cy="120" r="82" />
             <ellipse class="boot-orbit boot-orbit-two" cx="120" cy="120" rx="101" ry="47" transform="rotate(-38 120 120)" />
             <ellipse class="boot-orbit" cx="120" cy="120" rx="97" ry="38" transform="rotate(42 120 120)" />
-            <circle class="boot-core" cx="120" cy="120" r="48" />
+            <circle class="boot-core" cx="120" cy="120" r="64" />
             <path class="boot-spark" d="m190 45 5 14 14 5-14 5-5 14-5-14-14-5 14-5 5-14Z" />
             <circle cx="39" cy="105" r="4" fill="#f5e2de" stroke="#6a2153" stroke-width="2" />
             <circle cx="186" cy="175" r="4" fill="#f5e2de" stroke="#6a2153" stroke-width="2" />
           </svg>
-          <span class="boot-monogram">✳</span>
+          <svg class="boot-logo" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <path d="M10 31.5c7.8-.7 12.9-4.7 15.5-12.1C27.8 13 32.1 9.8 39 9" />
+            <path d="M10 31.5c-.4-5.2-2.1-9.1-5.3-11.8M10 31.5c5.2-.1 9.4 1.6 12.5 5.2" />
+            <path d="m32 21 2-5.1 5.1-2-5.1-2L32 6.8l-2 5.1-5.1 2 5.1 2L32 21Z" />
+            <circle cx="10" cy="31.5" r="2.4" /><circle cx="39" cy="9" r="2" />
+          </svg>
         </div>
         <div class="boot-copy"><p class="boot-title">Loading…</p><span class="boot-progress" aria-hidden="true"><i></i></span></div>
       </div>

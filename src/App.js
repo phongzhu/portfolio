@@ -24,7 +24,7 @@ function PortfolioLogo({ className }) {
   </svg>;
 }
 
-function PortfolioLoader({ profile, settings }) {
+function PortfolioLoader({ profile, settings, ready, pulsing, exiting }) {
   const name = profile.full_name.trim();
   const loaderVars = {
     '--loader-paper': settings.background_color || '#f5e2de',
@@ -33,13 +33,13 @@ function PortfolioLoader({ profile, settings }) {
     '--loader-accent': settings.secondary_color || '#1d3a4d',
   };
 
-  return <div className="portfolio-loader" style={loaderVars} role="status" aria-live="polite" aria-label="Loading portfolio">
+  return <div className={`portfolio-loader${ready ? ' is-ready' : ''}${pulsing ? ' is-pulsing' : ''}${exiting ? ' is-exiting' : ''}`} style={loaderVars} role="status" aria-live="polite" aria-label={ready || pulsing || exiting ? 'Portfolio is ready' : 'Loading portfolio'}>
     <div className="loader-art" aria-hidden="true">
       <svg viewBox="0 0 240 240" fill="none">
         <circle className="loader-orbit loader-orbit-one" cx="120" cy="120" r="82" />
         <ellipse className="loader-orbit loader-orbit-two" cx="120" cy="120" rx="101" ry="47" transform="rotate(-38 120 120)" />
         <ellipse className="loader-orbit loader-orbit-three" cx="120" cy="120" rx="97" ry="38" transform="rotate(42 120 120)" />
-        <circle className="loader-core" cx="120" cy="120" r="48" />
+        <circle className="loader-core" cx="120" cy="120" r="64" />
         <path className="loader-spark" d="m190 45 5 14 14 5-14 5-5 14-5-14-14-5 14-5 5-14Z" />
         <circle className="loader-node loader-node-one" cx="39" cy="105" r="4" />
         <circle className="loader-node loader-node-two" cx="186" cy="175" r="4" />
@@ -47,7 +47,7 @@ function PortfolioLoader({ profile, settings }) {
       <PortfolioLogo className="loader-logo" />
     </div>
     <div className="loader-copy">
-      <p className="loader-title">{name ? `Loading ${name.split(/\s+/)[0]}’s portfolio…` : 'Loading…'}</p>
+      <p className="loader-title">{ready || pulsing || exiting ? 'Portfolio is ready' : name ? `Loading ${name.split(/\s+/)[0]}’s portfolio…` : 'Loading…'}</p>
       <span className="loader-progress" aria-hidden="true"><i /></span>
     </div>
   </div>;
@@ -80,6 +80,19 @@ function formatDateRange(start, end, isCurrent) {
   return [formatMonthYear(start), isCurrent ? 'Present' : formatMonthYear(end)].filter(Boolean).join(' — ');
 }
 
+function CollapsiblePortfolioSection({ id, index, kicker, title, description, expanded, onToggle, children }) {
+  const panelId = `${id}-panel`;
+  return <section id={id} className="collapsible-section" data-expanded={expanded}>
+    <button className="collapsible-section-toggle" type="button" aria-expanded={expanded} aria-controls={panelId} onClick={onToggle}>
+      <span className="collapsible-section-index" aria-hidden="true">{index}</span><span className="collapsible-section-heading"><span className="collapsible-section-kicker">{kicker}</span><strong>{title}</strong><small>{description}</small></span>
+      <span className="collapsible-section-action"><span>{expanded ? 'Minimize' : 'View section'}</span><span className="collapsible-chevron"><Icon name="down" size={17} /></span></span>
+    </button>
+    <div className="collapsible-section-panel" id={panelId} aria-hidden={!expanded} inert={!expanded}>
+      <div className="collapsible-section-inner">{children}</div>
+    </div>
+  </section>;
+}
+
 function ExperienceSection({ experiences }) {
   if (!experiences.length) return null;
   return <section className="experience-section" id="experience"><div className="section-heading"><div><div className="eyebrow">CAREER PATH</div><h2>Experience</h2><p>Roles, teams, and work that shaped my practice.</p></div></div><div className="experience-timeline">{experiences.map((entry) => <article className="experience-public-card" key={entry.id}><div className="experience-timeline-mark" /><div className="experience-public-heading"><div><span className="experience-org">{entry.organization}</span><h3>{entry.role_title}</h3></div><span className="experience-dates">{formatDateRange(entry.start_date, entry.end_date, entry.is_current)}</span></div><div className="experience-meta">{entry.employment_type && <span>{entry.employment_type}</span>}{entry.workplace_type && <span>{entry.workplace_type}</span>}{entry.location && <span>{entry.location}</span>}</div>{entry.description && <p>{entry.description}</p>}</article>)}</div></section>;
@@ -87,7 +100,7 @@ function ExperienceSection({ experiences }) {
 
 function CredentialsSection({ credentials }) {
   if (!credentials.length) return null;
-  return <section className="credentials-section" id="credentials"><div className="section-heading"><div><div className="eyebrow">RECOGNITION &amp; LEARNING</div><h2>Awards &amp; certifications</h2><p>Credentials and milestones earned along the way.</p></div></div><div className="credentials-grid">{credentials.map((entry) => <article className="credential-public-card" key={entry.id}>{entry.image_url && <a className="credential-public-image" href={entry.credential_url || entry.image_url} target="_blank" rel="noreferrer"><img src={entry.image_url} alt={`${entry.title} certificate`} /></a>}<div className="credential-public-copy"><span className="credential-kind">{entry.kind === 'award' ? 'AWARD' : 'CERTIFICATION'}</span><h3>{entry.title}</h3>{entry.issuer && <p className="credential-issuer">{entry.issuer}</p>}{(entry.issued_on || entry.expires_on) && <p className="credential-dates">{entry.issued_on ? `Issued ${formatMonthYear(entry.issued_on)}` : ''}{entry.expires_on ? ` · Expires ${formatMonthYear(entry.expires_on)}` : ''}</p>}{entry.credential_id && <p className="credential-id">Credential ID · {entry.credential_id}</p>}{entry.description && <p>{entry.description}</p>}{entry.credential_url && <a className="text-link" href={entry.credential_url} target="_blank" rel="noreferrer">View credential <Icon name="arrow" size={14} /></a>}</div></article>)}</div></section>;
+  return <section className="credentials-section" id="credentials-content"><div className="section-heading"><div><div className="eyebrow">RECOGNITION &amp; LEARNING</div><h2>Awards &amp; certifications</h2><p>Credentials and milestones earned along the way.</p></div></div><div className="credentials-grid">{credentials.map((entry) => <article className="credential-public-card" key={entry.id}>{entry.image_url && <a className="credential-public-image" href={entry.credential_url || entry.image_url} target="_blank" rel="noreferrer"><img src={entry.image_url} alt={`${entry.title} certificate`} /></a>}<div className="credential-public-copy"><span className="credential-kind">{entry.kind === 'award' ? 'AWARD' : 'CERTIFICATION'}</span><h3>{entry.title}</h3>{entry.issuer && <p className="credential-issuer">{entry.issuer}</p>}{(entry.issued_on || entry.expires_on) && <p className="credential-dates">{entry.issued_on ? `Issued ${formatMonthYear(entry.issued_on)}` : ''}{entry.expires_on ? ` · Expires ${formatMonthYear(entry.expires_on)}` : ''}</p>}{entry.credential_id && <p className="credential-id">Credential ID · {entry.credential_id}</p>}{entry.description && <p>{entry.description}</p>}{entry.credential_url && <a className="text-link" href={entry.credential_url} target="_blank" rel="noreferrer">View credential <Icon name="arrow" size={14} /></a>}</div></article>)}</div></section>;
 }
 
 function SkillsSection({ skills }) {
@@ -389,6 +402,10 @@ function App() {
   const [activityForm, setActivityForm] = useState(null);
   const [socialLinks, setSocialLinks] = useState([]);
   const [loading, setLoading] = useState(Boolean(supabase));
+  const [loaderVisible, setLoaderVisible] = useState(Boolean(supabase));
+  const [loaderReady, setLoaderReady] = useState(false);
+  const [loaderPulsing, setLoaderPulsing] = useState(false);
+  const [loaderExiting, setLoaderExiting] = useState(false);
   const [notice, setNotice] = useState('');
   const [admin, setAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -396,6 +413,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('projects');
   const [projectFilter, setProjectFilter] = useState('All work');
   const [landingPortfolioTab, setLandingPortfolioTab] = useState('work');
+  const [expandedPortfolioSections, setExpandedPortfolioSections] = useState({});
   const [selectedWorkId, setSelectedWorkId] = useState(null);
   const [adminPage, setAdminPage] = useState('list');
   const [selectedProject, setSelectedProject] = useState(null);
@@ -407,6 +425,27 @@ function App() {
   const [editProject, setEditProject] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [backgroundPreview, setBackgroundPreview] = useState('');
+
+  const openPortfolioSection = (id) => setExpandedPortfolioSections((current) => ({ ...current, [id]: true }));
+  const togglePortfolioSection = (id) => setExpandedPortfolioSections((current) => ({ ...current, [id]: !current[id] }));
+
+  useEffect(() => {
+    if (!showManager) return undefined;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.paddingRight = previousBodyPaddingRight;
+    };
+  }, [showManager]);
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
@@ -460,6 +499,34 @@ function App() {
     return () => { alive = false; listener.subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (loading) {
+      setLoaderVisible(true);
+      setLoaderReady(false);
+      setLoaderPulsing(false);
+      setLoaderExiting(false);
+      return undefined;
+    }
+    if (!loaderVisible) return undefined;
+    setLoaderReady(true);
+    let pulseTimer;
+    let exitTimer;
+    const readyTimer = setTimeout(() => {
+      setLoaderReady(false);
+      setLoaderPulsing(true);
+      pulseTimer = setTimeout(() => {
+        setLoaderPulsing(false);
+        setLoaderExiting(true);
+        exitTimer = setTimeout(() => setLoaderVisible(false), 1250);
+      }, 3100);
+    }, 1250);
+    return () => {
+      clearTimeout(readyTimer);
+      clearTimeout(pulseTimer);
+      clearTimeout(exitTimer);
+    };
+  }, [loading, loaderVisible]);
 
   useEffect(() => {
     if (!('IntersectionObserver' in window)) return undefined;
@@ -769,19 +836,19 @@ function App() {
 
   return (
     <main className="portfolio" style={cssVars}>
-      {loading && <PortfolioLoader profile={profile} settings={settings} />}
+      {loaderVisible && <PortfolioLoader profile={profile} settings={settings} ready={loaderReady} pulsing={loaderPulsing} exiting={loaderExiting} />}
       {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Dismiss"><Icon name="close" size={14} /></button></div>}
       <header className="topbar">
         <a className="wordmark" href="#top" aria-label={profile.full_name ? `${profile.full_name} home` : 'Portfolio home'}>{initials && <span className="wordmark-mark"><PortfolioLogo /></span>}<span>{profile.full_name && <strong>{profile.full_name}</strong>}{profile.headline && <small>{profile.headline}</small>}</span></a>
         <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Toggle menu"><Icon name={mobileMenu ? 'close' : 'menu'} /></button>
         <nav className={mobileMenu ? 'nav open' : 'nav'}>
-          {publicProjects.length > 0 && <a href="#work" onClick={() => { setLandingPortfolioTab('work'); setMobileMenu(false); }}>Work <span>({String(publicProjects.length).padStart(2, '0')})</span></a>}
-          {publicExperiences.length > 0 && <a href="#experience" onClick={() => setMobileMenu(false)}>Experience</a>}
-          {publicEducation.length > 0 && <a href="#education" onClick={() => setMobileMenu(false)}>Education</a>}
-          {publicSkills.length > 0 && <a href="#skills" onClick={() => setMobileMenu(false)}>Skills</a>}
-          {publicCredentials.length > 0 && <a href="#credentials" onClick={() => setMobileMenu(false)}>Awards</a>}
-          {publicActivities.length > 0 && <a href="#work" onClick={() => { setLandingPortfolioTab('activities'); setMobileMenu(false); }}>Activities</a>}
-          {hasContact && <a href="#contact" onClick={() => setMobileMenu(false)}>Contact</a>}
+          {publicProjects.length > 0 && <a href="#work" onClick={() => { setLandingPortfolioTab('work'); openPortfolioSection('work'); setMobileMenu(false); }}>Work <span>({String(publicProjects.length).padStart(2, '0')})</span></a>}
+          {publicExperiences.length > 0 && <a href="#career-overview" onClick={() => { openPortfolioSection('career-overview'); setMobileMenu(false); }}>Experience</a>}
+          {publicEducation.length > 0 && <a href="#education" onClick={() => { openPortfolioSection('career-overview'); setMobileMenu(false); }}>Education</a>}
+          {publicSkills.length > 0 && <a href="#skills" onClick={() => { openPortfolioSection('career-overview'); setMobileMenu(false); }}>Skills</a>}
+          {publicCredentials.length > 0 && <a href="#credentials" onClick={() => { openPortfolioSection('credentials'); setMobileMenu(false); }}>Awards</a>}
+          {publicActivities.length > 0 && <a href="#work" onClick={() => { setLandingPortfolioTab('activities'); openPortfolioSection('work'); setMobileMenu(false); }}>Activities</a>}
+          {hasContact && <a href="#contact" onClick={() => { openPortfolioSection('contact'); setMobileMenu(false); }}>Contact</a>}
           {admin ? <button className="admin-link" onClick={() => setShowManager(true)}>Manage portfolio <span className="admin-dot" /></button> : <button className="admin-link" onClick={openLogin}>Admin</button>}
         </nav>
       </header>
@@ -808,7 +875,7 @@ function App() {
           {(profile.full_name || profile.headline) && <h1>{profile.full_name || profile.headline}</h1>}
           {profile.full_name && profile.headline && <p className="hero-role">{profile.headline}</p>}
           {bio && <p className="hero-intro">{bio}</p>}
-          <div className="hero-actions">{publicProjects.length > 0 && <a className="button button-dark" href="#work" onClick={() => setLandingPortfolioTab('work')}>Explore my work <Icon name="down" size={16} /></a>}{profile.email && <a className="text-link" href={`mailto:${profile.email}`}>Get in touch <Icon name="arrow" size={15} /></a>}</div>
+          <div className="hero-actions">{publicProjects.length > 0 && <a className="button button-dark" href="#work" onClick={() => { setLandingPortfolioTab('work'); openPortfolioSection('work'); }}>Explore my work <Icon name="down" size={16} /></a>}{profile.email && <a className="text-link" href={`mailto:${profile.email}`}>Get in touch <Icon name="arrow" size={15} /></a>}</div>
           {(profile.location || portfolioSkills.length > 0) && <div className="hero-meta">
             {profile.location && <div className="hero-location-meta"><span>BASED IN</span><strong>{profile.location}</strong></div>}
             {portfolioSkills.length > 0 && <div className="hero-tools-meta"><span>PROJECT TOOLS</span><div>{portfolioSkills.map((tool) => <span className="hero-tool-chip" key={tool}>{tool}</span>)}</div></div>}
@@ -819,7 +886,8 @@ function App() {
         {(publicProjects.length > 0 || profile.bio) && <div className="scroll-hint"><span /> SCROLL TO EXPLORE</div>}
       </section>
 
-      {(loading || publicProjects.length > 0 || publicActivities.length > 0) && <section className="work-section" id="work">
+      {(loading || publicProjects.length > 0 || publicActivities.length > 0) && <CollapsiblePortfolioSection id="work" index="01" kicker="SELECTED WORK &amp; ACTIVITIES" title="Explore projects and updates" description="Show or minimize the work and activities section." expanded={Boolean(expandedPortfolioSections.work)} onToggle={() => togglePortfolioSection('work')}><section className="work-section">
+        <svg className="work-section-vector" viewBox="0 0 900 680" fill="none" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><ellipse className="work-vector-orbit work-vector-orbit-one" cx="614" cy="296" rx="222" ry="137" transform="rotate(-27 614 296)" /><ellipse className="work-vector-orbit work-vector-orbit-two" cx="614" cy="296" rx="284" ry="178" transform="rotate(24 614 296)" /><path className="work-vector-curve" d="M294 552c112-148 197-205 301-183 101 21 143-41 199-173" /><circle className="work-vector-node" cx="294" cy="552" r="7" /><circle className="work-vector-node" cx="495" cy="374" r="5" /><circle className="work-vector-node" cx="794" cy="196" r="8" /><path className="work-vector-spark" d="m784 424 8 23 23 8-23 8-8 23-8-23-23-8 23-8 8-23Z" /></svg>
         <div className="work-toolbar"><div className="section-heading"><div><div className="eyebrow">{landingPortfolioTab === 'work' ? 'SELECTED WORK' : 'FROM THE STUDIO'}</div><h2>{landingPortfolioTab === 'work' ? (settings.header_text || (firstName ? `${firstName}’s work` : 'Projects')) : 'Activities & updates'}</h2><p>{landingPortfolioTab === 'work' ? (settings.body_text || 'A closer look at selected projects.') : 'Recent notes, milestones, and moments from my work.'}</p></div></div>
           {landingPortfolioTab === 'work' && projectFilters.length > 0 && <div className="project-filters" role="group" aria-label="Filter projects"><span>Explore by</span>{['All work', ...projectFilters].map((filter) => <button key={filter} type="button" className={projectFilter === filter ? 'active' : ''} aria-pressed={projectFilter === filter} onClick={() => { setProjectFilter(filter); setSelectedWorkId(null); }}>{filter}</button>)}</div>}
         </div>
@@ -832,7 +900,7 @@ function App() {
           {!loading && filteredWork.length > 0 && <div className="work-showcase">
             <div className="work-project-list" aria-label="Projects">
               {filteredWork.map((project, index) => <button className={`work-project-row${(selectedWork?.id === project.id) ? ' active' : ''}`} type="button" key={project.id} aria-pressed={selectedWork?.id === project.id} onClick={() => setSelectedWorkId(project.id)}>
-                <span className="work-project-number">{String(index + 1).padStart(2, '0')}</span><span className="work-project-copy"><strong>{project.title}</strong>{project.summary && <small>{project.summary}</small>}{project.year && <time>{project.year}</time>}</span><Icon name="arrow" size={19} />
+                <span className="work-project-number">{String(index + 1).padStart(2, '0')}</span><span className="work-project-copy"><strong>{project.title}</strong>{project.summary && <small>{project.summary}</small>}{project.year && <time>{project.year}</time>}</span><span className="work-project-thumb" aria-hidden="true">{project.images?.[0] ? <img src={project.images[0]} alt="" loading="lazy" /> : <span>{project.title?.charAt(0) || 'P'}</span>}</span><Icon name="arrow" size={19} />
               </button>)}
             </div>
             {selectedWork && <article className="work-preview-card">
@@ -846,9 +914,9 @@ function App() {
           {!loading && !publicProjects.length && <div className="empty-work">No published projects yet.</div>}
         </div>}
         {landingPortfolioTab === 'activities' && <div id="activities-tab-panel" className="landing-content-panel activities-tab-panel" role="tabpanel" aria-labelledby="activities-tab">{publicActivities.length > 0 ? <ActivitiesSection activities={publicActivities} profile={profile} embedded /> : <div className="empty-work">No activities have been shared yet.</div>}</div>}
-      </section>}
+      </section></CollapsiblePortfolioSection>}
 
-      {(publicExperiences.length > 0 || publicEducation.length > 0 || publicSkills.length > 0) && <div className="career-overview-grid">
+      {(publicExperiences.length > 0 || publicEducation.length > 0 || publicSkills.length > 0) && <CollapsiblePortfolioSection id="career-overview" index="02" kicker="CAREER &amp; LEARNING" title="Experience, education & skills" description="Explore my roles, education, and strengths." expanded={Boolean(expandedPortfolioSections['career-overview'])} onToggle={() => togglePortfolioSection('career-overview')}><div className="career-overview-grid">
         <svg className="career-overview-vector" viewBox="0 0 1440 660" preserveAspectRatio="none" fill="none" aria-hidden="true">
           <path className="career-vector-orbit career-vector-orbit-one" d="M-45 520C132 442 151 235 310 199c179-41 232 222 411 217 178-5 201-255 397-309 142-39 235 19 374 120" />
           <path className="career-vector-orbit career-vector-orbit-two" d="M-30 584c205-108 298-269 449-248 172 24 162 224 321 221 165-3 251-223 440-239 99-8 185 26 289 101" />
@@ -860,15 +928,15 @@ function App() {
         <ExperienceSection experiences={publicExperiences} />
         <EducationSection education={publicEducation} />
         <SkillsSection skills={publicSkills} />
-      </div>}
-      <CredentialsSection credentials={publicCredentials} />
-      {hasContact && <section className="contact-section" id="contact"><div className="eyebrow"><span className="eyebrow-dot" /> CONTACT</div><h2>Let’s talk.</h2><p>Reach me through the channel that works best for you.</p>{profile.email && <a className="button button-light" href={`mailto:${profile.email}`}>Email me <Icon name="arrow" size={16} /></a>}<div className="contact-details">{profile.email && <a href={`mailto:${profile.email}`}>{profile.email}</a>}{profile.phone_number && <a href={`tel:${profile.phone_number.replace(/[^\d+]/g, '')}`}>{profile.phone_number}</a>}{profile.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer">Website</a>}{contactLinks.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">{link.label}</a>)}</div><span className="contact-spark">✳</span></section>}
+      </div></CollapsiblePortfolioSection>}
+      {publicCredentials.length > 0 && <CollapsiblePortfolioSection id="credentials" index="03" kicker="RECOGNITION &amp; LEARNING" title="Awards & certifications" description="Credentials and milestones earned along the way." expanded={Boolean(expandedPortfolioSections.credentials)} onToggle={() => togglePortfolioSection('credentials')}><CredentialsSection credentials={publicCredentials} /></CollapsiblePortfolioSection>}
+      {hasContact && <CollapsiblePortfolioSection id="contact" index="04" kicker="CONTACT" title="Let’s talk." description="Reach me through the channel that works best for you." expanded={Boolean(expandedPortfolioSections.contact)} onToggle={() => togglePortfolioSection('contact')}><section className="contact-section"><div className="eyebrow"><span className="eyebrow-dot" /> CONTACT</div><h2>Let’s talk.</h2><p>Reach me through the channel that works best for you.</p>{profile.email && <a className="button button-light" href={`mailto:${profile.email}`}>Email me <Icon name="arrow" size={16} /></a>}<div className="contact-details">{profile.email && <a href={`mailto:${profile.email}`}>{profile.email}</a>}{profile.phone_number && <a href={`tel:${profile.phone_number.replace(/[^\d+]/g, '')}`}>{profile.phone_number}</a>}{profile.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer">Website</a>}{contactLinks.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">{link.label}</a>)}</div><span className="contact-spark">✳</span></section></CollapsiblePortfolioSection>}
       <footer className="site-footer"><span className="footer-copyright">© {new Date().getFullYear()} {profile.full_name || 'Portfolio'}</span><a className="footer-top-link" href="#top">Back to top <Icon name="arrow" size={13} /></a></footer>
       {focusedProject && <ProjectModal key={focusedProject.id} project={focusedProject} onClose={() => setFocusedProject(null)} />}
 
         {showLogin && <div className="modal-backdrop" onClick={closeLogin}><form className="login-panel" autoComplete="off" onSubmit={signIn} onClick={(e) => e.stopPropagation()}><button type="button" className="modal-close" onClick={closeLogin} aria-label="Close"><Icon name="close" /></button><div className="eyebrow">PRIVATE STUDIO</div><h2>Welcome back.</h2><p>Sign in to manage your portfolio.</p><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" autoComplete="off" required /></label><label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" autoComplete="off" required /></label><button className="button button-dark login-submit" disabled={saving}>{saving ? 'Signing in…' : 'Sign in'} <Icon name="arrow" size={15} /></button>{!supabase && <small className="config-hint">Add your Supabase URL and publishable key in <code>.env.local</code>.</small>}</form></div>}
 
-      {showManager && admin && <div className="manager-backdrop"><aside className="manager"><div className="manager-head"><div className="eyebrow">PORTFOLIO STUDIO</div><div className="manager-head-actions"><button className="view-landing" onClick={() => { setShowManager(false); window.location.hash = 'top'; }}>View landing page</button><button className="signout" onClick={signOut}><Icon name="logout" size={15} /> Sign out</button></div></div>{adminPage === 'list' && <nav className="manager-tabs"><button className={activeTab === 'projects' ? 'active' : ''} onClick={() => { setActiveTab('projects'); setAdminPage('list'); }}>Projects <span>{projects.length}</span></button><button className={activeTab === 'experience' ? 'active' : ''} onClick={() => { setActiveTab('experience'); setAdminPage('list'); }}>Experience &amp; Awards <span>{experiences.length + credentials.length}</span></button><button className={activeTab === 'skills-education' ? 'active' : ''} onClick={() => { setActiveTab('skills-education'); setAdminPage('list'); }}>Skills &amp; Education <span>{skills.length + education.length}</span></button><button className={activeTab === 'activities' ? 'active' : ''} onClick={() => { setActiveTab('activities'); setAdminPage('list'); }}>Activities <span>{activities.length}</span></button><button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</button><button className={activeTab === 'appearance' ? 'active' : ''} onClick={() => setActiveTab('appearance')}>Appearance</button></nav>}
+      {showManager && admin && <div className="manager-backdrop"><aside className="manager"><div className="manager-head"><div className="manager-brand"><span className="manager-brand-mark">{initials || 'AK'}</span><span className="manager-brand-copy"><strong>Portfolio studio</strong><small>Manage your portfolio content</small></span></div><div className="manager-head-actions"><button className="view-landing" onClick={() => { setShowManager(false); window.location.hash = 'top'; }}>View landing page</button><button className="signout" onClick={signOut}><Icon name="logout" size={15} /> Sign out</button></div></div>{adminPage === 'list' && <nav className="manager-tabs"><button className={activeTab === 'projects' ? 'active' : ''} onClick={() => { setActiveTab('projects'); setAdminPage('list'); }}>Projects <span>{projects.length}</span></button><button className={activeTab === 'experience' ? 'active' : ''} onClick={() => { setActiveTab('experience'); setAdminPage('list'); }}>Experience &amp; Awards <span>{experiences.length + credentials.length}</span></button><button className={activeTab === 'skills-education' ? 'active' : ''} onClick={() => { setActiveTab('skills-education'); setAdminPage('list'); }}>Skills &amp; Education <span>{skills.length + education.length}</span></button><button className={activeTab === 'activities' ? 'active' : ''} onClick={() => { setActiveTab('activities'); setAdminPage('list'); }}>Activities <span>{activities.length}</span></button><button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</button><button className={activeTab === 'appearance' ? 'active' : ''} onClick={() => setActiveTab('appearance')}>Appearance</button></nav>}
         {activeTab === 'projects' && adminPage === 'list' && <ProjectCatalog projects={projects} onAdd={() => { setEditProject(null); setAdminPage('new'); }} onView={(project) => { setSelectedProject(project); setAdminPage('view'); }} onEdit={(project) => { setEditProject(project); setAdminPage('edit'); }} onDelete={deleteProject} />}
         {activeTab === 'projects' && (adminPage === 'new' || adminPage === 'edit') && <ProjectEditor project={adminPage === 'edit' ? editProject : null} saving={saving} onSubmit={saveProject} onCancel={() => { setEditProject(null); setAdminPage('list'); }} onImagesSelected={() => setNotice('')} />}
         {activeTab === 'projects' && adminPage === 'view' && <ProjectDetails project={selectedProject} onBack={() => setAdminPage('list')} onEdit={(project) => { setEditProject(project); setAdminPage('edit'); }} />}        {activeTab === 'experience' && <ExperienceManager experiences={experiences} credentials={credentials} experienceForm={experienceForm} setExperienceForm={setExperienceForm} credentialForm={credentialForm} setCredentialForm={setCredentialForm} saving={saving} onSaveExperience={saveExperience} onSaveCredential={saveCredential} onDeleteExperience={deleteExperience} onDeleteCredential={deleteCredential} />}
