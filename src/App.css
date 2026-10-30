@@ -2214,3 +2214,8 @@
   .login-panel .modal-close { top: 12px; right: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .login-panel,.login-panel .modal-close,.login-panel .login-submit { animation: none; transition: none; } }
+
+/* Keep the cover title legible when #top jumps into the sticky hero handoff. */
+@supports (animation-timeline: view()) {
+  .portfolio-cover.is-revealing .portfolio-cover-content { animation: none; animation-timeline: auto; }
+}
