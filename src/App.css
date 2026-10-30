@@ -2179,3 +2179,38 @@
   .portfolio > .topbar .mobile-toggle { margin-left: auto; margin-right: 50px; }
   .portfolio > .topbar .admin-link.admin-secret-link { right: 2px; width: 42px; height: 46px; }
 }
+
+/* Branded sign-in panel with a polished, accessible password control. */
+.login-backdrop { z-index: 200; padding: 20px; background: color-mix(in srgb, var(--ink) 77%, transparent); backdrop-filter: blur(12px) saturate(.78); }
+.login-panel { position: relative; isolation: isolate; width: min(452px, calc(100vw - 36px)); padding: clamp(34px, 5vw, 52px); overflow: hidden; border: 1px solid color-mix(in srgb, var(--clay) 24%, transparent); border-radius: 10px; background: var(--paper); box-shadow: 0 32px 110px color-mix(in srgb, var(--ink) 32%, transparent), 0 3px 12px color-mix(in srgb, var(--ink) 12%, transparent); animation: login-panel-arrive .35s cubic-bezier(.2,.75,.25,1) both; }
+.login-panel::before { position: absolute; z-index: -1; top: 0; right: 0; left: 0; height: 4px; background: linear-gradient(90deg, var(--forest), var(--clay) 58%, color-mix(in srgb, var(--clay) 18%, var(--paper))); content: ''; }
+.login-panel::after { position: absolute; z-index: -1; top: -88px; right: -86px; width: 210px; height: 210px; border: 1px solid color-mix(in srgb, var(--clay) 12%, transparent); border-radius: 50%; box-shadow: 0 0 0 16px color-mix(in srgb, var(--clay) 3%, transparent), 0 0 0 42px color-mix(in srgb, var(--forest) 2%, transparent); content: ''; pointer-events: none; }
+.login-panel > :not(.modal-close) { position: relative; z-index: 1; }
+.login-panel .modal-close { top: 16px; right: 16px; border: 1px solid color-mix(in srgb, var(--forest) 15%, transparent); background: color-mix(in srgb, var(--paper) 90%, transparent); color: var(--forest); transition: transform .18s ease, background .18s ease; }
+.login-panel .modal-close:hover { transform: rotate(90deg); background: var(--surface); }
+.login-panel-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 20px; }
+.login-panel-brand > span { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--forest); color: var(--paper); }
+.login-panel-brand svg { width: 25px; height: 25px; }
+.login-panel-brand .eyebrow { margin: 0; color: var(--muted); }
+.login-panel h2 { margin: 0 34px 7px 0; color: var(--forest); font: 400 clamp(38px, 5vw, 46px)/1.05 var(--heading-font); letter-spacing: -.035em; }
+.login-panel > p { margin: 0 0 30px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.login-panel label { gap: 8px; margin-bottom: 18px; color: var(--forest); font-size: 10px; font-weight: 700; letter-spacing: .025em; }
+.login-panel input { min-height: 47px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--paper) 72%, white); color: var(--ink); font: 12px var(--body-font); transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.login-panel input:focus { border-color: var(--clay); outline: 0; background: white; box-shadow: 0 0 0 3px color-mix(in srgb, var(--clay) 12%, transparent); }
+.login-panel .password-input-wrap { position: relative; display: block; width: 100%; }
+.login-panel .password-input-wrap input { padding-right: 52px; }
+.login-panel .password-visibility-toggle { position: absolute; top: 50%; right: 6px; display: grid; width: 36px; height: 36px; min-width: 36px; min-height: 36px; place-items: center; padding: 0; border: 0 !important; border-radius: 50%; appearance: none; background: transparent !important; box-shadow: none !important; color: var(--muted); cursor: pointer; transform: translateY(-50%); transition: background .18s ease, color .18s ease; }
+.login-panel .password-visibility-toggle:hover,.login-panel .password-visibility-toggle:focus-visible { background: color-mix(in srgb, var(--clay) 10%, transparent) !important; color: var(--forest); }
+.login-panel .password-visibility-toggle:focus-visible { outline: 2px solid var(--clay); outline-offset: 1px; }
+.login-panel .login-submit { min-height: 49px; margin-top: 5px; border-radius: 5px; box-shadow: 0 8px 20px color-mix(in srgb, var(--forest) 17%, transparent); transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.login-panel .login-submit:hover { transform: translateY(-1px); box-shadow: 0 12px 25px color-mix(in srgb, var(--forest) 23%, transparent); }
+.login-panel-footer { display: flex; align-items: center; gap: 8px; margin-top: 25px; padding-top: 15px; border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: .13em; }
+.login-panel-footer i { width: 7px; height: 7px; border-radius: 50%; background: var(--clay); box-shadow: 0 0 0 3px color-mix(in srgb, var(--clay) 12%, transparent); }
+@keyframes login-panel-arrive { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 650px) {
+  .login-backdrop { padding: 14px; }
+  .login-panel { width: min(440px, calc(100vw - 28px)); padding: 36px 24px 27px; }
+  .login-panel h2 { font-size: clamp(36px, 10vw, 42px); }
+  .login-panel .modal-close { top: 12px; right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .login-panel,.login-panel .modal-close,.login-panel .login-submit { animation: none; transition: none; } }
