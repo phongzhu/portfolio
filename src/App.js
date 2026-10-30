@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import './App.css';
 
@@ -10,7 +10,7 @@ const defaultSettings = { background_color: '#f5e2de', surface_color: '#eaeaea',
 const appearanceColors = [['background_color', 'Page background'], ['surface_color', 'Card surface'], ['primary_color', 'Primary color'], ['secondary_color', 'Secondary color'], ['text_color', 'Text color'], ['muted_color', 'Muted text']];
 
 function Icon({ name, size = 18 }) {
-  const paths = { arrow: <><path d="M7 17 17 7M7 7h10v10" /></>, down: <><path d="M7 10l5 5 5-5" /></>, plus: <><path d="M12 5v14M5 12h14" /></>, close: <><path d="m18 6-12 12M6 6l12 12" /></>, spark: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z" /><path d="m19 14 1 2.5 2.5 1-2.5 1L19 21l-1-2.5-2.5-1 2.5-1L19 14Z" /></>, menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>, check: <><path d="m5 12 4 4L19 6" /></>, image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></>, logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6" /></> };
+  const paths = { arrow: <><path d="M7 17 17 7M7 7h10v10" /></>, down: <><path d="M7 10l5 5 5-5" /></>, plus: <><path d="M12 5v14M5 12h14" /></>, close: <><path d="m18 6-12 12M6 6l12 12" /></>, eye: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>, eyeOff: <><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a14.9 14.9 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 3-.4" /></>, spark: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z" /><path d="m19 14 1 2.5 2.5 1-2.5 1L19 21l-1-2.5-2.5-1 2.5-1L19 14Z" /></>, menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>, check: <><path d="m5 12 4 4L19 6" /></>, image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></>, logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6" /></> };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
@@ -21,6 +21,13 @@ function PortfolioLogo({ className }) {
     <path d="m32 21 2-5.1 5.1-2-5.1-2L32 6.8l-2 5.1-5.1 2 5.1 2L32 21Z" fill="currentColor" />
     <circle cx="10" cy="31.5" r="2.4" fill="currentColor" />
     <circle cx="39" cy="9" r="2" fill="currentColor" />
+  </svg>;
+}
+
+function ProfileCloud({ side }) {
+  return <svg className={`hero-cloud-volume hero-cloud-${side}`} viewBox="0 0 920 420" fill="none" aria-hidden="true" focusable="false" preserveAspectRatio="none">
+    <path d="M132 344c-40 0-72-31-72-70 0-38 32-69 72-69 13 0 25 3 35 9 12-74 77-130 156-130 73 0 134 48 151 114 21-20 49-32 80-32 66 0 120 52 120 117 0 6-.4 12-1.3 18 13-10 29-16 47-16 42 0 76 33 76 74s-34 74-76 74H132Z" fill="var(--cloud-fill)" stroke="var(--cloud-outline)" strokeWidth="2" />
+    {side === 'right' && <circle cx="100" cy="330" r="68" fill="var(--cloud-fill)" stroke="var(--cloud-outline)" strokeWidth="2" />}
   </svg>;
 }
 
@@ -50,6 +57,169 @@ function PortfolioLoader({ profile, settings, ready, pulsing, exiting }) {
       <p className="loader-title">{ready || pulsing || exiting ? 'Portfolio is ready' : name ? `Loading ${name.split(/\s+/)[0]}’s portfolio…` : 'Loading…'}</p>
       <span className="loader-progress" aria-hidden="true"><i /></span>
     </div>
+  </div>;
+}
+
+function AvoidingText({ as: Element = 'span', text, className, id, fitSingleLine = false }) {
+  const textRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!fitSingleLine || !textRef.current) return undefined;
+    const element = textRef.current;
+    const parent = element.parentElement;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    let active = true;
+    let frame = 0;
+    const initialStyle = window.getComputedStyle(element);
+    const baseSize = parseFloat(initialStyle.fontSize);
+    const font = initialStyle.font;
+    context && (context.font = font);
+    const fitText = () => {
+      if (!active || !context || frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        if (!active) return;
+        const textWidth = context.measureText(text).width + baseSize * .4;
+        const availableWidth = Math.max(0, parent.clientWidth - 16);
+        const nextSize = textWidth > availableWidth && availableWidth > 0
+          ? baseSize * (availableWidth / textWidth)
+          : baseSize;
+        const currentSize = parseFloat(element.style.fontSize) || baseSize;
+        if (Math.abs(currentSize - nextSize) > 0.1) element.style.fontSize = `${nextSize}px`;
+      });
+    };
+    fitText();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fitText) : null;
+    if (observer && parent) observer.observe(parent);
+    else window.addEventListener('resize', fitText);
+    document.fonts?.ready.then(fitText);
+    return () => {
+      active = false;
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener('resize', fitText);
+    };
+  }, [fitSingleLine, text]);
+
+  return <Element ref={textRef} id={id} className={className} aria-label={text}>
+    <span className={`portfolio-cover-letters${fitSingleLine ? ' is-single-line' : ''}`} aria-hidden="true">{Array.from(text).map((letter, index) => letter === ' ' ? ' ' : <span className="portfolio-cover-letter" data-repel-letter key={`${letter}-${index}`} style={{ animationDelay: `${index * 18 + 120}ms` }}>{letter}</span>)}</span>
+  </Element>;
+}
+
+function ToolboxPopup({ tools, onClose, closeRef }) {
+  const [packed, setPacked] = useState(false);
+  const [boxClosed, setBoxClosed] = useState(false);
+  const [boxSucked, setBoxSucked] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef(null);
+  const packTimerRef = useRef(null);
+  const foldTimerRef = useRef(null);
+  const suckTimerRef = useRef(null);
+  const ringSize = tools.length > 12 ? Math.ceil(tools.length / 3) : tools.length;
+  const stageTools = tools.map((tool, index) => {
+    const ringIndex = tools.length > 12 ? Math.floor(index / ringSize) : 0;
+    const angle = ((index % ringSize) / Math.max(ringSize, 1)) * Math.PI * 2 - Math.PI / 2 + ringIndex * Math.PI / ringSize;
+    const ring = tools.length > 12 ? [.62,.82,1][ringIndex] : 1;
+    const x = 50 + Math.cos(angle) * 31 * ring;
+    const y = 50 + Math.sin(angle) * 27 * ring;
+    const normalizedTool = tool.toLowerCase();
+    const mark = normalizedTool.includes('typescript') ? 'TS'
+      : normalizedTool.includes('react') ? 'R'
+        : normalizedTool.includes('flutter') ? 'F'
+          : normalizedTool.includes('dart') ? 'D'
+            : normalizedTool.includes('paymongo') ? 'P'
+              : normalizedTool.includes('ui/ux') ? '✦'
+                : normalizedTool.includes('full stack') ? '</>'
+                  : normalizedTool.includes('analyst') ? 'A'
+                    : tool.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase();
+    return {
+      tool,
+      mark,
+      style: {
+        left: `${x}%`,
+        top: `${y}%`,
+        '--tool-left': `${x}%`,
+        '--tool-top': `${y}%`,
+        '--tool-rotation': `${Math.sin(index * 2.17) * 2.4}deg`,
+        '--tool-delay': `${Math.min(index, 14) * 70}ms`,
+        '--pack-delay': `${Math.min(tools.length - index - 1, 14) * 48}ms`,
+        '--badge-color': index % 2 ? 'var(--clay)' : 'var(--forest)',
+        '--pack-x': `${(50 - x).toFixed(2)}vw`,
+        '--pack-y': `${(44 - y).toFixed(2)}vh`,
+      },
+    };
+  });
+  const closeAfterPacking = () => {
+    if (packed) return;
+    setPacked(true);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setBoxClosed(true);
+      setBoxSucked(true);
+      setClosing(true);
+      closeTimerRef.current = window.setTimeout(onClose, 50);
+      return;
+    }
+    const packDuration = 1050 + Math.min(Math.max(tools.length - 1, 0), 14) * 48 + 120;
+    packTimerRef.current = window.setTimeout(() => setBoxClosed(true), packDuration);
+    foldTimerRef.current = window.setTimeout(() => setBoxSucked(true), packDuration + 540);
+    suckTimerRef.current = window.setTimeout(() => setClosing(true), packDuration + 1160);
+    closeTimerRef.current = window.setTimeout(onClose, packDuration + 1540);
+  };
+
+  useEffect(() => () => {
+    window.clearTimeout(closeTimerRef.current);
+    window.clearTimeout(packTimerRef.current);
+    window.clearTimeout(foldTimerRef.current);
+    window.clearTimeout(suckTimerRef.current);
+  }, []);
+
+  return <div className={`toolbox-backdrop${closing ? ' is-closing' : ''}`}>
+    <section className="toolbox-stage" role="dialog" aria-modal="true" aria-label="Portfolio toolbox" onKeyDown={(event) => {
+      if (event.key !== 'Tab') return;
+      const focusable = event.currentTarget.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }}>
+      <div className="toolbox-spotlights" aria-hidden="true">
+        <svg viewBox="0 0 1000 800" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="toolbox-spotlight" x1="0" y1="0" x2="0" y2="1"><stop stopColor="var(--clay)" stopOpacity=".4" /><stop offset=".48" stopColor="var(--clay)" stopOpacity=".2" /><stop offset="1" stopColor="var(--clay)" stopOpacity="0" /></linearGradient>
+            <radialGradient id="toolbox-center-glow"><stop stopColor="var(--clay)" stopOpacity=".2" /><stop offset="1" stopColor="var(--clay)" stopOpacity="0" /></radialGradient>
+          </defs>
+          <ellipse cx="500" cy="555" rx="390" ry="200" fill="url(#toolbox-center-glow)" />
+          <path d="M125 12 0 555h480L125 12Zm187 0L180 590h380L312 12Zm188 0L330 600h340L500 12Zm188 0L440 590h380L688 12Zm187 0L520 555h480L875 12Z" fill="url(#toolbox-spotlight)" />
+        </svg>
+      </div>
+      <div className="toolbox-truss" aria-hidden="true" />
+      <div className="toolbox-lamps" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <span className={`toolbox-lamp toolbox-lamp-${index + 1}`} key={index}><i /><b /></span>)}</div>
+      <div className={`toolbox-dust${packed ? ' is-dimmed' : ''}`} aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} style={{ '--dust-delay': `${index * -470}ms`, '--dust-x': `${(index % 5 - 2) * 22}px` }} />)}</div>
+      <div className={`toolbox-badge-field${packed ? ' is-packed' : ''}`} role="group" aria-label="Tools and skills">
+        {stageTools.length > 0 ? stageTools.map(({ tool, mark, style }, index) => <span className={`toolbox-badge toolbox-badge-float-${index % 3 + 1}`} key={tool} aria-hidden={packed} style={style}><span className="toolbox-badge-mark" aria-hidden="true">{mark}</span>{tool}</span>) : null}
+      </div>
+      <div className={`toolbox-box-wrap${packed ? ' is-packing' : ''}${boxClosed ? ' is-closed' : ''}${boxSucked ? ' is-sucked' : ''}`}>
+        <div className="toolbox-box-aura" aria-hidden="true" />
+        <button ref={closeRef} className="toolbox-box-button" type="button" onClick={closeAfterPacking} disabled={packed} aria-label="Store tools and close toolbox">
+          <svg viewBox="0 0 460 320" fill="none" aria-hidden="true">
+            <ellipse cx="230" cy="286" rx="176" ry="23" fill="var(--ink)" fillOpacity=".15" />
+            <g stroke="var(--ink)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+              <path className="toolbox-flap toolbox-flap-back-left" d="m126 153 104-34-31-17-98 32 25 19Z" fill="color-mix(in srgb,var(--surface) 80%,var(--clay))" />
+              <path className="toolbox-flap toolbox-flap-back-right" d="m230 119 104 34 26-19-96-32-34 17Z" fill="color-mix(in srgb,var(--surface) 68%,var(--clay))" />
+              <path d="m126 153 104-34 104 34-104 38-104-38Z" fill="color-mix(in srgb,var(--ink) 28%,var(--forest))" />
+              <path d="m126 153 104 38v24l-104-37v-25Z" fill="color-mix(in srgb,var(--forest) 34%,var(--surface))" />
+              <path d="m230 191 104-38v25l-104 37v-24Z" fill="color-mix(in srgb,var(--forest) 44%,var(--surface))" />
+              <path d="m126 178 104 37v70l-104-39v-68Z" fill="var(--surface)" />
+              <path d="m230 215 104-37v68l-104 39v-70Z" fill="color-mix(in srgb,var(--surface) 74%,var(--paper))" />
+              <path className="toolbox-flap toolbox-flap-front-left" d="m126 153 104 38-34 39-88-37 18-40Z" fill="var(--paper)" />
+              <path className="toolbox-flap toolbox-flap-front-right" d="m230 191 104-38 18 40-88 37-34-39Z" fill="color-mix(in srgb,var(--surface) 72%,var(--paper))" />
+              <path d="M230 215v70m-93-47 5 4m7-1 5 4m152-7 5-4m7 1 5-4m-97 37v11m0 5v4" />
+            </g>
+          </svg>
+          <span className="toolbox-box-hint"><Icon name="spark" size={13} />Click the box to store your tools</span>
+        </button>
+      </div>
+    </section>
   </div>;
 }
 
@@ -125,44 +295,65 @@ function ActivitiesSection({ activities, profile, embedded = false }) {
 }
 
 function ProjectModal({ project, onClose }) {
-  const [activeImage, setActiveImage] = useState(0);
+  const [viewingImage, setViewingImage] = useState(null);
+  const viewingImageRef = useRef(viewingImage);
+  viewingImageRef.current = viewingImage;
   const images = project.images || [];
-  const moveImage = (direction) => setActiveImage((current) => (current + direction + images.length) % images.length);
+  const moveImage = useCallback((direction) => setViewingImage((current) => current === null ? current : (current + direction + images.length) % images.length), [images.length]);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
-      if (images.length > 1 && event.key === 'ArrowLeft') { event.preventDefault(); setActiveImage((current) => (current - 1 + images.length) % images.length); }
-      if (images.length > 1 && event.key === 'ArrowRight') { event.preventDefault(); setActiveImage((current) => (current + 1) % images.length); }
+      if (event.key === 'Escape') {
+        if (viewingImageRef.current !== null) setViewingImage(null);
+        else onClose();
+      }
+      if (images.length > 1 && viewingImageRef.current !== null && event.key === 'ArrowLeft') { event.preventDefault(); moveImage(-1); }
+      if (images.length > 1 && viewingImageRef.current !== null && event.key === 'ArrowRight') { event.preventDefault(); moveImage(1); }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [images.length, onClose]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [images.length, moveImage, onClose]);
 
-  return <div className="modal-backdrop project-backdrop" onClick={onClose}>
-    <article className="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title" onClick={(event) => event.stopPropagation()}>
-      <button className="modal-close" onClick={onClose} aria-label="Close project"><Icon name="close" /></button>
-      <div className="modal-gallery" aria-label="Project image gallery">
-        <div className="modal-gallery-stage">
-          {images.length > 0 ? <img key={images[activeImage]} src={images[activeImage]} alt={`${project.title} screenshot ${activeImage + 1} of ${images.length}`} /> : <div className="modal-gallery-empty">No project screenshots available</div>}
-          {images.length > 1 && <>
-            <button className="gallery-arrow gallery-previous" type="button" onClick={() => moveImage(-1)} aria-label="Previous image"><span aria-hidden="true">←</span></button>
-            <button className="gallery-arrow gallery-next" type="button" onClick={() => moveImage(1)} aria-label="Next image"><span aria-hidden="true">→</span></button>
-            <span className="gallery-counter" aria-live="polite">{String(activeImage + 1).padStart(2, '0')} <i /> {String(images.length).padStart(2, '0')}</span>
-          </>}
-        </div>
-        {images.length > 1 && <div className="modal-gallery-thumbnails" aria-label="Choose a project screenshot">{images.map((src, index) => <button type="button" key={src} className={activeImage === index ? 'active' : ''} onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} aria-pressed={activeImage === index}><img src={src} alt="" /></button>)}</div>}
+  return <main className="project-viewer" aria-labelledby="project-modal-title">
+    <header className="project-viewer-nav">
+      <button className="project-viewer-back" type="button" onClick={onClose}><span aria-hidden="true">←</span> Back to portfolio</button>
+      <span className="project-viewer-index">PROJECT / {String(project.year || 'CASE STUDY')}</span>
+      <span className="project-viewer-mark" aria-hidden="true"><PortfolioLogo /></span>
+    </header>
+    <section className="project-viewer-intro">
+      <div className="eyebrow">SELECTED WORK{project.year && ` · ${project.year}`}</div>
+      <h1 id="project-modal-title">{project.title}</h1>
+      {project.summary && <p>{project.summary}</p>}
+    </section>
+    <article className="project-modal">
+      <div className="modal-gallery showroom-gallery" aria-label="Project image showroom">
+        <div className="showroom-gallery-heading"><span>PROJECT GALLERY</span><span>{String(images.length).padStart(2, '0')} VIEWS</span></div>
+        {images.length > 0 ? <div className={`showroom-collage${images.length === 1 ? ' is-single' : ''}${images.length === 2 ? ' is-pair' : ''}${project.display_type === 'mobile' ? ' device-mobile' : ''}`}>
+          {images.map((src, index) => <button className={`showroom-image showroom-image-${index + 1}${project.display_type !== 'none' ? ` ${project.display_type}-device` : ''}`} type="button" key={`${src}-${index}`} onClick={() => setViewingImage(index)} aria-label={`Open ${project.title} image ${index + 1} in full view`}>
+            <img src={src} alt={`${project.title} project view ${index + 1}`} loading={index > 2 ? 'lazy' : 'eager'} />
+            <span className="showroom-image-meta"><span>VIEW {String(index + 1).padStart(2, '0')}</span><span aria-hidden="true">↗</span></span>
+          </button>)}
+        </div> : <div className="modal-gallery-empty">No project screenshots available</div>}
       </div>
       <div className="modal-content">
-        <div className="eyebrow">CASE STUDY{project.year && ` · ${project.year}`}</div>
-        <h2 id="project-modal-title">{project.title}</h2>
-        {project.summary && <p className="modal-summary">{project.summary}</p>}
+        <div className="eyebrow">ABOUT THE PROJECT</div>
         {project.description && project.description !== project.summary && <p className="modal-description">{project.description}</p>}
-        {project.tags?.length > 0 && <><div className="modal-detail-label">TOOLS &amp; TECHNOLOGIES</div><div className="tag-list">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></>}
         <div className="modal-actions">{project.project_url && <a href={project.project_url} target="_blank" rel="noreferrer" className="button button-dark">Visit project <Icon name="arrow" size={15} /></a>}{project.source_url && <a href={project.source_url} target="_blank" rel="noreferrer" className="text-link">View source <Icon name="arrow" size={15} /></a>}</div>
       </div>
     </article>
-  </div>;
+    {viewingImage !== null && <div className="showroom-lightbox" role="dialog" aria-modal="true" aria-label={`${project.title} image ${viewingImage + 1} of ${images.length}`} onClick={() => setViewingImage(null)}>
+      <div className="showroom-lightbox-head"><span>{project.title}<small> / {String(viewingImage + 1).padStart(2, '0')} OF {String(images.length).padStart(2, '0')}</small></span><button type="button" onClick={() => setViewingImage(null)} aria-label="Close image view"><Icon name="close" size={20} /></button></div>
+      <button className="showroom-lightbox-close-area" type="button" onClick={() => setViewingImage(null)} aria-label="Close image view" />
+      <img className="showroom-lightbox-image" src={images[viewingImage]} alt={`${project.title} project view ${viewingImage + 1}`} onClick={(event) => event.stopPropagation()} />
+      {images.length > 1 && <div className="showroom-lightbox-controls" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => moveImage(-1)} aria-label="Previous image">←</button><button type="button" onClick={() => moveImage(1)} aria-label="Next image">→</button></div>}
+    </div>}
+    <footer className="project-viewer-footer"><span>END OF CASE STUDY</span><button type="button" onClick={onClose}>Return to all work <span aria-hidden="true">↑</span></button></footer>
+  </main>;
 }
 
 function SkillsEducationManager({ skills, education, skillForm, setSkillForm, educationForm, setEducationForm, saving, onSaveSkill, onSaveEducation, onDeleteSkill, onDeleteEducation }) {
@@ -326,7 +517,7 @@ function ProjectCatalog({ projects, onAdd, onView, onEdit, onDelete }) {
     <div className="project-catalog-heading"><button className="button button-dark" onClick={onAdd}><Icon name="plus" size={16} /> Add project</button></div>
     {projects.length ? <div className="project-admin-list">{projects.map((project) => <article className="project-admin-card" key={project.id}>
       <img className="project-admin-image" src={project.images?.[0]} alt={`${project.title} cover`} />
-      <div className="project-admin-info"><div className="project-admin-status">{project.published ? 'PUBLISHED' : 'DRAFT'}</div><h4>{project.title}</h4><p>{project.summary}</p><div className="tag-list">{(project.tags || []).slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}</div></div>
+      <div className="project-admin-info"><div className="project-admin-status">{project.published ? 'PUBLISHED' : 'DRAFT'}<span className="project-display-chip">{project.display_type === 'mobile' ? 'PHONE FRAME' : project.display_type === 'web' ? 'BROWSER FRAME' : 'NO FRAME'}</span></div><h4>{project.title}</h4><p>{project.summary}</p></div>
       <div className="project-admin-actions"><button className="button button-outline" onClick={() => onView(project)}>View portfolio</button><button className="button button-dark" onClick={() => onEdit(project)}>Edit portfolio</button><button className="delete-project-link" onClick={() => onDelete(project.id)}>Delete project</button></div>
     </article>)}</div> : <div className="project-empty-state"><div className="empty-icon"><Icon name="image" size={24} /></div><h4>Your portfolio starts here</h4><p>Add a project to show your work, tools, languages, and images.</p><button className="button button-dark" onClick={onAdd}><Icon name="plus" size={16} /> Add your first project</button></div>}
   </div>;
@@ -357,6 +548,7 @@ function ProjectEditor({ project, saving, onSubmit, onCancel, onImagesSelected }
       <div className="form-grid">
         <label className="full">Project name<input name="title" required placeholder="For example, Northstar" defaultValue={project?.title || ''} /></label>
         <label className="full">Short summary<input name="summary" required placeholder="What did you make, and who is it for?" defaultValue={project?.summary || ''} /></label>
+        <label>Showcase format<select name="display_type" defaultValue={project?.display_type || 'none'}><option value="none">No device frame</option><option value="web">Web / desktop browser</option><option value="mobile">Mobile / phone</option></select><small>Choose how screenshots are presented in the project gallery.</small></label>
         <label className="full">Project details<textarea name="description" rows="5" placeholder="Describe the project, your role, and what you made." defaultValue={project?.description || ''} /></label>
         <label>Live project link <small>Optional</small><input type="url" name="project_url" placeholder="https://" defaultValue={project?.project_url || ''} /></label>
         <label>Source code link <small>Optional</small><input type="url" name="source_url" placeholder="https://" defaultValue={project?.source_url || ''} /></label>
@@ -410,17 +602,31 @@ function App() {
   const [admin, setAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showManager, setShowManager] = useState(false);
+  const [showToolbox, setShowToolbox] = useState(false);
+  const toolboxTriggerRef = useRef(null);
+  const toolboxCloseRef = useRef(null);
+  const toolboxWasOpenRef = useRef(false);
+  const toolboxPreviousOverflowRef = useRef('');
   const [activeTab, setActiveTab] = useState('projects');
   const [projectFilter, setProjectFilter] = useState('All work');
   const [landingPortfolioTab, setLandingPortfolioTab] = useState('work');
   const [expandedPortfolioSections, setExpandedPortfolioSections] = useState({});
   const [selectedWorkId, setSelectedWorkId] = useState(null);
+  const [workSelectionNotice, setWorkSelectionNotice] = useState(null);
   const [adminPage, setAdminPage] = useState('list');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [profileCardFlipped, setProfileCardFlipped] = useState(false);
+  const [profileCardClosing, setProfileCardClosing] = useState(false);
+  const [profileCardSparkle, setProfileCardSparkle] = useState(false);
+  const profileCardTriggerRef = useRef(null);
+  const profileCardCloseRef = useRef(null);
+  const profileCardReturnTimerRef = useRef(null);
+  const profileCardSparkleTimerRef = useRef(null);
   const [focusedProject, setFocusedProject] = useState(null);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editProject, setEditProject] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -428,6 +634,79 @@ function App() {
 
   const openPortfolioSection = (id) => setExpandedPortfolioSections((current) => ({ ...current, [id]: true }));
   const togglePortfolioSection = (id) => setExpandedPortfolioSections((current) => ({ ...current, [id]: !current[id] }));
+  function moveCoverLetters(event) {
+    if (event.pointerType !== 'mouse' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    event.currentTarget.querySelectorAll('[data-repel-letter]').forEach((letter, index) => {
+      const rect = letter.getBoundingClientRect();
+      let dx = rect.left + rect.width / 2 - event.clientX;
+      let dy = rect.top + rect.height / 2 - event.clientY;
+      let distance = Math.hypot(dx, dy);
+      const radius = 112;
+      if (distance < radius) {
+        if (distance < 1) { dx = Math.cos(index * 2.4); dy = Math.sin(index * 2.4); distance = 1; }
+        const force = ((radius - distance) / radius) ** 2 * 23;
+        letter.style.setProperty('--repel-x', `${(dx / distance) * force}px`);
+        letter.style.setProperty('--repel-y', `${(dy / distance) * force}px`);
+      } else {
+        letter.style.setProperty('--repel-x', '0px');
+        letter.style.setProperty('--repel-y', '0px');
+      }
+    });
+  }
+  function resetCoverLetters(event) {
+    event.currentTarget.querySelectorAll('[data-repel-letter]').forEach((letter) => {
+      letter.style.setProperty('--repel-x', '0px');
+      letter.style.setProperty('--repel-y', '0px');
+    });
+  }
+
+  const closeProfileCard = useCallback(() => {
+    if (!profileCardFlipped || profileCardClosing) return;
+    setProfileCardClosing(true);
+    window.clearTimeout(profileCardReturnTimerRef.current);
+    window.clearTimeout(profileCardSparkleTimerRef.current);
+    profileCardReturnTimerRef.current = window.setTimeout(() => {
+      setProfileCardFlipped(false);
+      setProfileCardClosing(false);
+      setProfileCardSparkle(true);
+      profileCardSparkleTimerRef.current = window.setTimeout(() => setProfileCardSparkle(false), 850);
+    }, 840);
+  }, [profileCardFlipped, profileCardClosing]);
+
+  useEffect(() => () => {
+    window.clearTimeout(profileCardReturnTimerRef.current);
+    window.clearTimeout(profileCardSparkleTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (profileCardFlipped) profileCardCloseRef.current?.focus();
+    else if (document.activeElement === profileCardCloseRef.current) profileCardTriggerRef.current?.focus();
+  }, [profileCardFlipped]);
+
+  useEffect(() => {
+    if (!showToolbox) {
+      if (toolboxWasOpenRef.current) {
+        document.body.style.overflow = toolboxPreviousOverflowRef.current;
+        toolboxWasOpenRef.current = false;
+        toolboxTriggerRef.current?.focus();
+      }
+      return undefined;
+    }
+    if (!toolboxWasOpenRef.current) toolboxPreviousOverflowRef.current = document.body.style.overflow;
+    toolboxWasOpenRef.current = true;
+    document.body.style.overflow = 'hidden';
+    toolboxCloseRef.current?.focus();
+    const handleKeyDown = (event) => { if (event.key === 'Escape') setShowToolbox(false); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showToolbox]);
+
+  useEffect(() => {
+    if (!profileCardFlipped) return undefined;
+    const handleKeyDown = (event) => { if (event.key === 'Escape') closeProfileCard(); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [profileCardFlipped, profileCardClosing, closeProfileCard]);
 
   useEffect(() => {
     if (!showManager) return undefined;
@@ -477,7 +756,7 @@ function App() {
           : [];
       setProjects(projectRows.map((item) => {
         const technologies = (item.project_technologies || []).map((link) => link.technologies).filter(Boolean);
-        return { ...item, year: item.created_at ? String(new Date(item.created_at).getFullYear()) : '', images: (item.project_images || []).sort((a, b) => a.display_order - b.display_order).map((img) => supabase.storage.from('portfolio-images').getPublicUrl(img.storage_path).data.publicUrl), tags: technologies.map((tech) => tech.name), tools: technologies.filter((tech) => tech.kind === 'tool' || tech.kind === 'framework').map((tech) => tech.name), languages: technologies.filter((tech) => tech.kind === 'language').map((tech) => tech.name) };
+        return { ...item, display_type: item.display_type || 'none', year: item.created_at ? String(new Date(item.created_at).getFullYear()) : '', images: (item.project_images || []).sort((a, b) => a.display_order - b.display_order).map((img) => supabase.storage.from('portfolio-images').getPublicUrl(img.storage_path).data.publicUrl), tags: technologies.map((tech) => tech.name), tools: technologies.filter((tech) => tech.kind === 'tool' || tech.kind === 'framework').map((tech) => tech.name), languages: technologies.filter((tech) => tech.kind === 'language').map((tech) => tech.name) };
       }));
       if (projectResult.error) setNotice('Projects could not be loaded from the portfolio database.');
       else if (projectResult.data != null && !Array.isArray(projectResult.data) && !projectResult.data?.id) setNotice('Projects returned an unexpected response. Check the projects query and refresh the page.');
@@ -550,6 +829,11 @@ function App() {
   const projectFilters = [...new Set(publicProjects.flatMap((project) => project.tags || []))].slice(0, 6);
   const filteredWork = projectFilter === 'All work' ? publicProjects : publicProjects.filter((project) => project.tags?.includes(projectFilter));
   const selectedWork = filteredWork.find((project) => project.id === selectedWorkId) || filteredWork[0];
+  const announceWorkSelection = (project) => {
+    setSelectedWorkId(project.id);
+    const tools = (project.tags || []).filter(Boolean);
+    setWorkSelectionNotice(tools.length ? { id: project.id, title: project.title, tools, nonce: Date.now() } : null);
+  };
   const nameParts = profile.full_name.trim().split(/\s+/).filter(Boolean);
   const firstName = nameParts[0] || '';
   const initials = nameParts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -560,6 +844,11 @@ function App() {
   const publicExperiences = experiences.filter((entry) => entry.published);
   const publicCredentials = credentials.filter((entry) => entry.published);
   const publicSkills = skills.filter((entry) => entry.published);
+  const allPortfolioTools = [...new Set([
+    ...publicSkills.map((skill) => String(skill.name || '').trim()),
+    ...publicProjects.flatMap((project) => [...(project.tags || []), ...(project.tools || [])]),
+  ].filter(Boolean))];
+  const coverTags = publicSkills.length ? publicSkills.slice(0, 3).map((skill) => skill.name) : portfolioSkills.slice(0, 3);
   const publicEducation = education.filter((entry) => entry.published);
   const publicActivities = activities.filter((entry) => entry.published);
   const cssVars = { '--paper': settings.background_color, '--surface': settings.surface_color, '--ink': settings.text_color, '--forest': settings.primary_color, '--clay': settings.secondary_color, '--muted': settings.muted_color, '--portfolio-background': settings.background_image_url ? `linear-gradient(${settings.background_color}ee, ${settings.background_color}ee), url("${settings.background_image_url}")` : 'none', '--heading-font': `'${settings.header_font}', Georgia, serif`, '--body-font': `'${settings.body_font}', sans-serif` };
@@ -578,8 +867,8 @@ function App() {
     }
   }
 
-  function openLogin() { setEmail(''); setPassword(''); setNotice(''); setShowLogin(true); }
-  function closeLogin() { setEmail(''); setPassword(''); setNotice(''); setShowLogin(false); }
+  function openLogin() { setEmail(''); setPassword(''); setShowPassword(false); setNotice(''); setShowLogin(true); }
+  function closeLogin() { setEmail(''); setPassword(''); setShowPassword(false); setNotice(''); setShowLogin(false); }
   async function signOut() { await supabase.auth.signOut(); setAdmin(false); setShowManager(false); }
 
   async function uploadPortfolioImage(file, path) {
@@ -783,7 +1072,7 @@ function App() {
     let slug = baseSlug;
     let suffix = 2;
     while (usedSlugs.has(slug)) { slug = `${baseSlug}-${suffix}`; suffix += 1; }
-    const { data: project, error } = await supabase.from('projects').upsert({ ...(id ? { id } : {}), title: values.title, slug, summary: values.summary, description: values.description, project_url: values.project_url || null, source_url: values.source_url || null, published: values.published === 'on' }, { onConflict: 'id' }).select().single();
+    const { data: project, error } = await supabase.from('projects').upsert({ ...(id ? { id } : {}), title: values.title, slug, summary: values.summary, description: values.description, project_url: values.project_url || null, source_url: values.source_url || null, display_type: ['mobile', 'web'].includes(values.display_type) ? values.display_type : 'none', published: values.published === 'on' }, { onConflict: 'id' }).select().single();
     if (error) { setNotice(error.message); setSaving(false); return; }
     if (files.length) {
       const uploaded = [];
@@ -824,7 +1113,7 @@ function App() {
     const rows = Array.isArray(data) ? data : data && typeof data === 'object' && data.id ? [data] : [];
     setProjects(rows.map((item) => {
       const technologies = (item.project_technologies || []).map((link) => link.technologies).filter(Boolean);
-      return { ...item, year: item.created_at ? String(new Date(item.created_at).getFullYear()) : '', images: (item.project_images || []).sort((a, b) => a.display_order - b.display_order).map((img) => supabase.storage.from('portfolio-images').getPublicUrl(img.storage_path).data.publicUrl), tags: technologies.map((tech) => tech.name), tools: technologies.filter((tech) => tech.kind === 'tool' || tech.kind === 'framework').map((tech) => tech.name), languages: technologies.filter((tech) => tech.kind === 'language').map((tech) => tech.name) };
+      return { ...item, display_type: item.display_type || 'none', year: item.created_at ? String(new Date(item.created_at).getFullYear()) : '', images: (item.project_images || []).sort((a, b) => a.display_order - b.display_order).map((img) => supabase.storage.from('portfolio-images').getPublicUrl(img.storage_path).data.publicUrl), tags: technologies.map((tech) => tech.name), tools: technologies.filter((tech) => tech.kind === 'tool' || tech.kind === 'framework').map((tech) => tech.name), languages: technologies.filter((tech) => tech.kind === 'language').map((tech) => tech.name) };
     }));
   }
 
@@ -838,7 +1127,7 @@ function App() {
     <main className="portfolio" style={cssVars}>
       {loaderVisible && <PortfolioLoader profile={profile} settings={settings} ready={loaderReady} pulsing={loaderPulsing} exiting={loaderExiting} />}
       {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Dismiss"><Icon name="close" size={14} /></button></div>}
-      <header className="topbar">
+      {!showLogin && <header className="topbar">
         <a className="wordmark" href="#top" aria-label={profile.full_name ? `${profile.full_name} home` : 'Portfolio home'}>{initials && <span className="wordmark-mark"><PortfolioLogo /></span>}<span>{profile.full_name && <strong>{profile.full_name}</strong>}{profile.headline && <small>{profile.headline}</small>}</span></a>
         <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Toggle menu"><Icon name={mobileMenu ? 'close' : 'menu'} /></button>
         <nav className={mobileMenu ? 'nav open' : 'nav'}>
@@ -849,9 +1138,24 @@ function App() {
           {publicCredentials.length > 0 && <a href="#credentials" onClick={() => { openPortfolioSection('credentials'); setMobileMenu(false); }}>Awards</a>}
           {publicActivities.length > 0 && <a href="#work" onClick={() => { setLandingPortfolioTab('activities'); openPortfolioSection('work'); setMobileMenu(false); }}>Activities</a>}
           {hasContact && <a href="#contact" onClick={() => { openPortfolioSection('contact'); setMobileMenu(false); }}>Contact</a>}
-          {admin ? <button className="admin-link" onClick={() => setShowManager(true)}>Manage portfolio <span className="admin-dot" /></button> : <button className="admin-link" onClick={openLogin}>Admin</button>}
         </nav>
-      </header>
+        {admin ? <button className={`admin-link admin-secret-link${mobileMenu ? ' is-menu-open' : ''}`} aria-label="Open portfolio admin" onClick={() => setShowManager(true)}>Manage portfolio</button> : <button className={`admin-link admin-secret-link${mobileMenu ? ' is-menu-open' : ''}`} aria-label="Admin sign in" onClick={openLogin}>Admin</button>}
+      </header>}
+
+      <section className={`portfolio-cover${!loaderVisible ? ' is-revealing' : ''}`} aria-labelledby="cover-title">
+        <img className="portfolio-cover-generated-art" src={`${process.env.PUBLIC_URL}/portfolio-orbit-background.png`} alt="" aria-hidden="true" />
+        <div className="portfolio-cover-atmosphere" aria-hidden="true" />
+        <div className="portfolio-cover-decoration" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /><span /><span /></div>
+        <div className="portfolio-cover-content" onPointerMove={moveCoverLetters} onPointerLeave={resetCoverLetters}>
+          <span className="portfolio-cover-kicker">PORTFOLIO PROFILE</span>
+          <AvoidingText as="h1" id="cover-title" className="portfolio-cover-title" text="PORTFOLIO" />
+          <AvoidingText as="p" className="portfolio-cover-name" text={profile.full_name || 'Your Name'} fitSingleLine />
+          {profile.headline && <p className="portfolio-cover-role">{profile.headline}</p>}
+          {coverTags.length > 0 && <div className="portfolio-cover-tags">{coverTags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
+          <a className="portfolio-cover-button" href="#top">Explore portfolio <Icon name="arrow" size={16} /></a>
+        </div>
+        <svg className="portfolio-cover-heart" viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 54S7 39 7 22c0-8 6-14 14-14 5 0 9 3 11 8 2-5 6-8 11-8 8 0 14 6 14 14 0 17-25 32-25 32Z" /></svg>
+      </section>
 
       <section className={`hero profile-hero${profile.avatar_url || initials ? '' : ' hero-no-photo'}`} id="top">
         <div className="hero-vector-scene" aria-hidden="true">
@@ -870,26 +1174,56 @@ function App() {
           <span className="hero-vector-glow hero-vector-glow-one" />
           <span className="hero-vector-glow hero-vector-glow-two" />
         </div>
+        <ProfileCloud side="left" />
+        <ProfileCloud side="right" />
         <div className="hero-copy">
           {(profile.full_name || profile.headline) && <div className="eyebrow"><span className="eyebrow-dot" /> PORTFOLIO PROFILE</div>}
           {(profile.full_name || profile.headline) && <h1>{profile.full_name || profile.headline}</h1>}
           {profile.full_name && profile.headline && <p className="hero-role">{profile.headline}</p>}
           {bio && <p className="hero-intro">{bio}</p>}
-          <div className="hero-actions">{publicProjects.length > 0 && <a className="button button-dark" href="#work" onClick={() => { setLandingPortfolioTab('work'); openPortfolioSection('work'); }}>Explore my work <Icon name="down" size={16} /></a>}{profile.email && <a className="text-link" href={`mailto:${profile.email}`}>Get in touch <Icon name="arrow" size={15} /></a>}</div>
-          {(profile.location || portfolioSkills.length > 0) && <div className="hero-meta">
-            {profile.location && <div className="hero-location-meta"><span>BASED IN</span><strong>{profile.location}</strong></div>}
-            {portfolioSkills.length > 0 && <div className="hero-tools-meta"><span>PROJECT TOOLS</span><div>{portfolioSkills.map((tool) => <span className="hero-tool-chip" key={tool}>{tool}</span>)}</div></div>}
-          </div>}
-          {contactLinks.length > 0 && <div className="hero-social-links"><span className="hero-social-label">CONNECT</span>{contactLinks.slice(0, 4).map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">{link.label}<Icon name="arrow" size={12} /></a>)}</div>}
+          <div className="hero-actions">
+            {publicProjects.length > 0 && <a className="button button-dark" href="#work" onClick={() => { setLandingPortfolioTab('work'); openPortfolioSection('work'); }}>Explore my work <Icon name="down" size={16} /></a>}
+            <button ref={toolboxTriggerRef} className="button button-toolbox" type="button" onClick={() => setShowToolbox(true)}><Icon name="spark" size={16} /> Open my toolbox</button>
+          </div>
         </div>
-        {(profile.avatar_url || initials) && <div className="hero-profile-visual"><div className="hero-profile-ring" /><span className="hero-orbit-dot" aria-hidden="true" />{profile.avatar_url ? <img className="hero-profile-photo" src={profile.avatar_url} alt={`${profile.full_name || 'Profile'} portrait`} fetchPriority="high" /> : <div className="hero-profile-initials" aria-label={profile.full_name}><PortfolioLogo /></div>}{profile.location && <div className="hero-location-chip"><span>BASED IN</span><strong>{profile.location}</strong></div>}<span className="hero-profile-mark" aria-hidden="true"><PortfolioLogo /></span><div className="hero-visual-note"><span className="hero-note-spark"><Icon name="spark" size={15} /></span><span><strong>Curious by nature.</strong><small>Building with purpose.</small></span></div></div>}
+        {(profile.avatar_url || initials) && <div className={`hero-profile-visual${profileCardFlipped ? ' is-flipped' : ''}${profileCardSparkle ? ' has-return-sparkle' : ''}`}>
+          <div className="hero-profile-ring" />
+          <span className="hero-orbit-dot" aria-hidden="true" />
+          <div className={`hero-profile-card${profileCardFlipped ? ' is-flipped' : ''}${profileCardClosing ? ' is-closing' : ''}`}>
+            <div className="hero-profile-card-face hero-profile-card-front" aria-hidden={profileCardFlipped} inert={profileCardFlipped}>
+              {profile.avatar_url ? <img className="hero-profile-photo" src={profile.avatar_url} alt="" fetchPriority="high" /> : <div className="hero-profile-initials" aria-hidden="true"><PortfolioLogo /></div>}
+              <svg className="profile-return-sparkle" viewBox="0 0 72 72" aria-hidden="true"><path d="M36 2 42 27 67 36 42 42 36 68 29 42 4 36 29 27 36 2Z" fill="var(--paper)" stroke="var(--clay)" strokeWidth="2.5" /><path d="m57 2 2.4 8.6L68 13l-8.6 2.4L57 24l-2.4-8.6L46 13l8.6-2.4L57 2Z" fill="var(--clay)" /><circle cx="12" cy="14" r="3" fill="var(--paper)" stroke="var(--forest)" strokeWidth="2" /></svg>
+              <button ref={profileCardTriggerRef} className="hero-profile-flip-trigger" type="button" aria-label="Show location and contact details" aria-controls="profile-card-details" aria-pressed={profileCardFlipped} onClick={() => { setProfileCardSparkle(false); setProfileCardFlipped(true); }} />
+              <span className="hero-profile-flip-hint">Click to view contact details <Icon name="arrow" size={13} /></span>
+            </div>
+            <div className="hero-profile-card-face hero-profile-card-back" id="profile-card-details" aria-hidden={!profileCardFlipped} inert={!profileCardFlipped}>
+              <div className="profile-card-back-head"><div><span>CONTACT CARD</span><strong>Let's connect.</strong></div><button ref={profileCardCloseRef} type="button" aria-controls="profile-card-details" aria-pressed={profileCardFlipped} aria-disabled={profileCardClosing} onClick={closeProfileCard} aria-label="Remove pin and return to portrait"><Icon name="close" size={16} /></button></div>
+              {profile.location && <div className="profile-card-location"><span>BASED IN</span><strong>{profile.location}</strong></div>}
+              <div className="profile-card-contact-list">
+                {profile.email && <a href={`mailto:${profile.email}`}><span>Email</span><strong>{profile.email}</strong><Icon name="arrow" size={13} /></a>}
+                {profile.phone_number && <a href={`tel:${profile.phone_number.replace(/[^\d+]/g, '')}`}><span>Phone</span><strong>{profile.phone_number}</strong><Icon name="arrow" size={13} /></a>}
+                {profile.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer"><span>Website</span><strong>{profile.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</strong><Icon name="arrow" size={13} /></a>}
+              </div>
+              {contactLinks.length > 0 && <div className="profile-card-socials"><span>SOCIALS</span><div>{contactLinks.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">{link.label}<Icon name="arrow" size={11} /></a>)}</div></div>}
+              <button className="profile-card-back-close" type="button" aria-controls="profile-card-details" aria-pressed={profileCardFlipped} aria-disabled={profileCardClosing} onClick={closeProfileCard}>Flip back to portrait</button>
+            </div>
+            <span className="profile-card-impact" aria-hidden="true" />
+            <svg className="profile-card-pin" viewBox="0 0 44 64" aria-hidden="true">
+              <path d="M22 27 22 59" stroke="var(--forest)" strokeWidth="3" strokeLinecap="round" />
+              <path d="m22 59-3 5 3-2 3 2-3-5Z" fill="var(--forest)" />
+              <path d="M22 5c-7 0-12 5-12 12 0 6 4 10 9 12l3 5 3-5c5-2 9-6 9-12 0-7-5-12-12-12Z" fill="var(--clay)" stroke="var(--paper)" strokeWidth="2" />
+              <ellipse cx="18" cy="13" rx="3" ry="5" transform="rotate(-28 18 13)" fill="var(--paper)" fillOpacity=".72" />
+            </svg>
+          </div>
+          <span className="hero-profile-mark" aria-hidden="true"><PortfolioLogo /></span>
+        </div>}
         {(publicProjects.length > 0 || profile.bio) && <div className="scroll-hint"><span /> SCROLL TO EXPLORE</div>}
       </section>
 
       {(loading || publicProjects.length > 0 || publicActivities.length > 0) && <CollapsiblePortfolioSection id="work" index="01" kicker="SELECTED WORK &amp; ACTIVITIES" title="Explore projects and updates" description="Show or minimize the work and activities section." expanded={Boolean(expandedPortfolioSections.work)} onToggle={() => togglePortfolioSection('work')}><section className="work-section">
         <svg className="work-section-vector" viewBox="0 0 900 680" fill="none" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><ellipse className="work-vector-orbit work-vector-orbit-one" cx="614" cy="296" rx="222" ry="137" transform="rotate(-27 614 296)" /><ellipse className="work-vector-orbit work-vector-orbit-two" cx="614" cy="296" rx="284" ry="178" transform="rotate(24 614 296)" /><path className="work-vector-curve" d="M294 552c112-148 197-205 301-183 101 21 143-41 199-173" /><circle className="work-vector-node" cx="294" cy="552" r="7" /><circle className="work-vector-node" cx="495" cy="374" r="5" /><circle className="work-vector-node" cx="794" cy="196" r="8" /><path className="work-vector-spark" d="m784 424 8 23 23 8-23 8-8 23-8-23-23-8 23-8 8-23Z" /></svg>
         <div className="work-toolbar"><div className="section-heading"><div><div className="eyebrow">{landingPortfolioTab === 'work' ? 'SELECTED WORK' : 'FROM THE STUDIO'}</div><h2>{landingPortfolioTab === 'work' ? (settings.header_text || (firstName ? `${firstName}’s work` : 'Projects')) : 'Activities & updates'}</h2><p>{landingPortfolioTab === 'work' ? (settings.body_text || 'A closer look at selected projects.') : 'Recent notes, milestones, and moments from my work.'}</p></div></div>
-          {landingPortfolioTab === 'work' && projectFilters.length > 0 && <div className="project-filters" role="group" aria-label="Filter projects"><span>Explore by</span>{['All work', ...projectFilters].map((filter) => <button key={filter} type="button" className={projectFilter === filter ? 'active' : ''} aria-pressed={projectFilter === filter} onClick={() => { setProjectFilter(filter); setSelectedWorkId(null); }}>{filter}</button>)}</div>}
+          {landingPortfolioTab === 'work' && projectFilters.length > 0 && <div className="project-filters" role="group" aria-label="Filter projects"><span>Explore by</span>{['All work', ...projectFilters].map((filter) => <button key={filter} type="button" className={projectFilter === filter ? 'active' : ''} aria-pressed={projectFilter === filter} onClick={() => { setProjectFilter(filter); setSelectedWorkId(null); setWorkSelectionNotice(null); }}>{filter}</button>)}</div>}
         </div>
         <div className="landing-content-tabs" role="tablist" aria-label="Portfolio content">
           <button id="work-tab" type="button" role="tab" aria-selected={landingPortfolioTab === 'work'} aria-controls="work-tab-panel" className={landingPortfolioTab === 'work' ? 'active' : ''} onClick={() => setLandingPortfolioTab('work')}>Work <span>{publicProjects.length}</span></button>
@@ -899,12 +1233,12 @@ function App() {
           {loading && <div className="loading-line"><span /> Loading projects</div>}
           {!loading && filteredWork.length > 0 && <div className="work-showcase">
             <div className="work-project-list" aria-label="Projects">
-              {filteredWork.map((project, index) => <button className={`work-project-row${(selectedWork?.id === project.id) ? ' active' : ''}`} type="button" key={project.id} aria-pressed={selectedWork?.id === project.id} onClick={() => setSelectedWorkId(project.id)}>
+              {filteredWork.map((project, index) => <button className={`work-project-row${(selectedWork?.id === project.id) ? ' active' : ''}`} type="button" key={project.id} aria-pressed={selectedWork?.id === project.id} onClick={() => announceWorkSelection(project)}>
                 <span className="work-project-number">{String(index + 1).padStart(2, '0')}</span><span className="work-project-copy"><strong>{project.title}</strong>{project.summary && <small>{project.summary}</small>}{project.year && <time>{project.year}</time>}</span><span className="work-project-thumb" aria-hidden="true">{project.images?.[0] ? <img src={project.images[0]} alt="" loading="lazy" /> : <span>{project.title?.charAt(0) || 'P'}</span>}</span><Icon name="arrow" size={19} />
               </button>)}
             </div>
-            {selectedWork && <article className="work-preview-card">
-              <div className="work-preview-tags">{selectedWork.tags?.map((tag) => <span key={tag}>{tag}</span>)}</div>
+            {selectedWork && <article key={selectedWork.id} className="work-preview-card">
+              {workSelectionNotice?.id === selectedWork.id && <div key={workSelectionNotice.nonce} className="work-tool-barrage" role="status" aria-label={`Tools used for ${workSelectionNotice.title}: ${workSelectionNotice.tools.join(', ')}`} aria-live="polite">{workSelectionNotice.tools.map((tool, index) => <span className="work-tool-message" key={`${tool}-${index}`} style={{ '--tool-message-delay': `${index * 620}ms` }}><i aria-hidden="true" />{tool}</span>)}</div>}
               <div className="work-preview-heading"><h3>{selectedWork.title}</h3>{selectedWork.year && <span>{selectedWork.year}</span>}</div>
               <button className="work-preview-image" type="button" onClick={() => setFocusedProject(selectedWork)} aria-label={`View ${selectedWork.title} case study`}>{selectedWork.images?.[0] ? <img src={selectedWork.images[0]} alt={`${selectedWork.title} preview`} /> : <div className="work-preview-placeholder" aria-hidden="true"><svg viewBox="0 0 440 270" fill="none"><circle cx="220" cy="135" r="80" /><circle cx="220" cy="135" r="111" /><path d="M79 212c57-43 98-56 141-30s73 30 141-20" /><path d="M114 75h58M268 195h58" /></svg><span>{selectedWork.title}</span></div>}<span><Icon name="arrow" size={17} /></span></button>
               {selectedWork.summary && <p>{selectedWork.summary}</p>}
@@ -931,10 +1265,11 @@ function App() {
       </div></CollapsiblePortfolioSection>}
       {publicCredentials.length > 0 && <CollapsiblePortfolioSection id="credentials" index="03" kicker="RECOGNITION &amp; LEARNING" title="Awards & certifications" description="Credentials and milestones earned along the way." expanded={Boolean(expandedPortfolioSections.credentials)} onToggle={() => togglePortfolioSection('credentials')}><CredentialsSection credentials={publicCredentials} /></CollapsiblePortfolioSection>}
       {hasContact && <CollapsiblePortfolioSection id="contact" index="04" kicker="CONTACT" title="Let’s talk." description="Reach me through the channel that works best for you." expanded={Boolean(expandedPortfolioSections.contact)} onToggle={() => togglePortfolioSection('contact')}><section className="contact-section"><div className="eyebrow"><span className="eyebrow-dot" /> CONTACT</div><h2>Let’s talk.</h2><p>Reach me through the channel that works best for you.</p>{profile.email && <a className="button button-light" href={`mailto:${profile.email}`}>Email me <Icon name="arrow" size={16} /></a>}<div className="contact-details">{profile.email && <a href={`mailto:${profile.email}`}>{profile.email}</a>}{profile.phone_number && <a href={`tel:${profile.phone_number.replace(/[^\d+]/g, '')}`}>{profile.phone_number}</a>}{profile.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer">Website</a>}{contactLinks.map((link) => <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">{link.label}</a>)}</div><span className="contact-spark">✳</span></section></CollapsiblePortfolioSection>}
+      {showToolbox && <ToolboxPopup tools={allPortfolioTools} onClose={() => setShowToolbox(false)} closeRef={toolboxCloseRef} />}
       <footer className="site-footer"><span className="footer-copyright">© {new Date().getFullYear()} {profile.full_name || 'Portfolio'}</span><a className="footer-top-link" href="#top">Back to top <Icon name="arrow" size={13} /></a></footer>
       {focusedProject && <ProjectModal key={focusedProject.id} project={focusedProject} onClose={() => setFocusedProject(null)} />}
 
-        {showLogin && <div className="modal-backdrop" onClick={closeLogin}><form className="login-panel" autoComplete="off" onSubmit={signIn} onClick={(e) => e.stopPropagation()}><button type="button" className="modal-close" onClick={closeLogin} aria-label="Close"><Icon name="close" /></button><div className="eyebrow">PRIVATE STUDIO</div><h2>Welcome back.</h2><p>Sign in to manage your portfolio.</p><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" autoComplete="off" required /></label><label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" autoComplete="off" required /></label><button className="button button-dark login-submit" disabled={saving}>{saving ? 'Signing in…' : 'Sign in'} <Icon name="arrow" size={15} /></button>{!supabase && <small className="config-hint">Add your Supabase URL and publishable key in <code>.env.local</code>.</small>}</form></div>}
+        {showLogin && <div className="modal-backdrop login-backdrop" onClick={closeLogin}><form className="login-panel" autoComplete="off" onSubmit={signIn} onClick={(e) => e.stopPropagation()}><button type="button" className="modal-close" onClick={closeLogin} aria-label="Close"><Icon name="close" /></button><div className="login-panel-brand"><span><PortfolioLogo /></span><div className="eyebrow">PRIVATE STUDIO</div></div><h2>Welcome back.</h2><p>Sign in to manage your portfolio.</p><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" autoComplete="off" required /></label><label>Password<div className="password-input-wrap"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" autoComplete="off" required /><button className="password-visibility-toggle" type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} title={showPassword ? 'Hide password' : 'Show password'}><Icon name={showPassword ? 'eyeOff' : 'eye'} size={17} /></button></div></label><button className="button button-dark login-submit" disabled={saving}>{saving ? 'Signing in…' : 'Sign in'} <Icon name="arrow" size={15} /></button>{!supabase && <small className="config-hint">Add your Supabase URL and publishable key in <code>.env.local</code>.</small>}<div className="login-panel-footer"><i /> PRIVATE PORTFOLIO ACCESS</div></form></div>}
 
       {showManager && admin && <div className="manager-backdrop"><aside className="manager"><div className="manager-head"><div className="manager-brand"><span className="manager-brand-mark">{initials || 'AK'}</span><span className="manager-brand-copy"><strong>Portfolio studio</strong><small>Manage your portfolio content</small></span></div><div className="manager-head-actions"><button className="view-landing" onClick={() => { setShowManager(false); window.location.hash = 'top'; }}>View landing page</button><button className="signout" onClick={signOut}><Icon name="logout" size={15} /> Sign out</button></div></div>{adminPage === 'list' && <nav className="manager-tabs"><button className={activeTab === 'projects' ? 'active' : ''} onClick={() => { setActiveTab('projects'); setAdminPage('list'); }}>Projects <span>{projects.length}</span></button><button className={activeTab === 'experience' ? 'active' : ''} onClick={() => { setActiveTab('experience'); setAdminPage('list'); }}>Experience &amp; Awards <span>{experiences.length + credentials.length}</span></button><button className={activeTab === 'skills-education' ? 'active' : ''} onClick={() => { setActiveTab('skills-education'); setAdminPage('list'); }}>Skills &amp; Education <span>{skills.length + education.length}</span></button><button className={activeTab === 'activities' ? 'active' : ''} onClick={() => { setActiveTab('activities'); setAdminPage('list'); }}>Activities <span>{activities.length}</span></button><button className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</button><button className={activeTab === 'appearance' ? 'active' : ''} onClick={() => setActiveTab('appearance')}>Appearance</button></nav>}
         {activeTab === 'projects' && adminPage === 'list' && <ProjectCatalog projects={projects} onAdd={() => { setEditProject(null); setAdminPage('new'); }} onView={(project) => { setSelectedProject(project); setAdminPage('view'); }} onEdit={(project) => { setEditProject(project); setAdminPage('edit'); }} onDelete={deleteProject} />}
